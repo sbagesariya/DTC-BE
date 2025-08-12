@@ -1,0 +1,7 @@
+{
+    "httpMethod": "GET",
+    "pathParameters": {        
+        "brand_id": "brand_id",
+        "product_id": "product_id"
+    }
+}

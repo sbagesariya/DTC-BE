@@ -1,0 +1,17 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "version" : "1.0",
+    "title" : "swagger-1"
+  },
+  "host" : "rt9zb85rd2.execute-api.us-east-1.amazonaws.com",
+  "basePath" : "/Stage",
+  "schemes" : [ "https" ],
+  "paths" : {
+    "/" : {
+      "post" : {
+        "responses" : { }
+      }
+    }
+  }
+}

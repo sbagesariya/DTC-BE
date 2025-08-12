@@ -1,0 +1,7 @@
+{
+    "httpMethod": "DELETE",
+    "queryStringParameters": {
+        "brand_id": "brand_id1",
+        "template_id": "template_id1"
+    }
+}

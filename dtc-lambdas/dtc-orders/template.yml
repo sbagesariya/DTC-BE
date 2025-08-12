@@ -1,0 +1,480 @@
+# This is the SAM template that represents the architecture of your serverless application
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
+
+# The AWSTemplateFormatVersion identifies the capabilities of the template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  dtc-orders
+
+Globals:
+  Function:
+    Timeout: 3
+  Api:
+    Cors:
+      AllowMethods: "'GET,HEAD,OPTIONS,POST,PUT,DELETE'"
+      AllowHeaders: "'Authorization, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, X-Api-Key'"
+      AllowOrigin: "'*'"
+      AllowCredentials: "'*'"
+
+Parameters:
+  ApiStageName:
+    Type: String
+    Default: stg
+    AllowedValues: [prod, stg]
+
+Conditions:
+  Is_Prod_Env: !Equals [!Ref ApiStageName, prod]
+
+# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
+Transform:
+- AWS::Serverless-2016-10-31
+
+# Resources declares the AWS resources that you want to include in the stack
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+Resources:
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  PortalAuthAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref ApiStageName
+      GatewayResponses:
+        DEFAULT_4xx:
+          ResponseParameters:
+            Headers:
+              Access-Control-Expose-Headers: "'WWW-Authenticate'"
+              Access-Control-Allow-Origin: "'*'"
+      OpenApiVersion: 3.0.1
+      Auth:
+        AddDefaultAuthorizerToCorsPreflight: false
+        DefaultAuthorizer: MyLambdaTokenAuthorizer
+        Authorizers:
+          MyLambdaTokenAuthorizer:
+            FunctionArn: !GetAtt PortalAuthFunction.Arn
+  PortalAuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: authorizer/handler.AuthorizerHandler
+      Runtime: nodejs12.x
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - SSMParameterReadPolicy:
+            ParameterName: JWT_SECRET
+
+  APIKeyAuth:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref ApiStageName
+      OpenApiVersion: 3.0.1
+    
+   # This is to defined API-KEY for different stages
+  ApiKey:
+    Type: 'AWS::ApiGateway::ApiKey'
+    DependsOn:
+      - APIKeyAuthStage
+      - PortalAuthAPIStage
+    Properties:
+      Description: DTC-orders API getway authentication api key
+      Enabled: 'true'
+      StageKeys:
+        - RestApiId: !Ref APIKeyAuth
+          StageName: !Ref ApiStageName
+        - RestApiId: !Ref PortalAuthAPI
+          StageName: !Ref ApiStageName
+  # This is to define usage plan for APIs
+  UsagePlan:
+    Type: 'AWS::ApiGateway::UsagePlan'
+    DependsOn:
+      - APIKeyAuth
+      - APIKeyAuthStage
+      - PortalAuthAPI
+      - PortalAuthAPIStage
+    Properties:
+      ApiStages:
+        - ApiId: !Ref APIKeyAuth
+          Stage: !Ref ApiStageName
+        - ApiId: !Ref PortalAuthAPI
+          Stage: !Ref ApiStageName
+      Description: DTC-orders API getway authentication usage plan
+      # Quota:
+      #   Limit: 5000
+      #   Period: MONTH
+      # Throttle:
+      #   BurstLimit: 200
+      #   RateLimit: 100
+      UsagePlanName: dtc-orders-api-key
+  # This is to defined API-key with it's usage plan
+  UsagePlanKey:
+    Type: 'AWS::ApiGateway::UsagePlanKey'
+    DependsOn:
+      - ApiKey
+      - UsagePlan
+    Properties:
+      KeyId: !Ref ApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlan  
+    
+  # This is a Lambda function config associated with the source code: get-orders-by-brand-id.js
+  getOrdersByBrandIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-orders-by-brand-id.getOrdersByBrandHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get Order Summary
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: Order
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          ORDER_TABLE: Order
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /cms/orders
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: get-order-detail.js
+  getOrderDetailCMSFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-order-detail.getOrderDetailHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get Order Detail
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: Order
+        - DynamoDBCrudPolicy:
+            TableName: Brands
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          ORDER_TABLE: Order
+          BRAND_TABLE: Brands
+          BRAND_TABLE: Portal_users,
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /cms/orders/detail/{order_id}
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+            RequestParameters:
+              - method.request.path.order_id
+
+  # This is a Lambda function config associated with the source code: get-order-detail.js
+  getOrderDetailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-order-detail.getOrderDetailHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get Order Detail
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: Order
+        - DynamoDBCrudPolicy:
+            TableName: Brands
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          ORDER_TABLE: Order
+          BRAND_TABLE: Brands
+          BRAND_TABLE: Portal_users
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /orders/detail/{order_id}
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+            RequestParameters:
+              - method.request.path.order_id
+
+  # This is a Lambda function config associated with the source code: get-order-summary-card.js
+  getOrderSummaryCardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-order-summary-card.getOrderSummaryCardHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get Order Summary Cards
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: Order
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          ORDER_TABLE: Order
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /cms/orders/cards/{brand_id}
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+            RequestParameters:
+              - method.request.path.brand_id
+            
+
+  # This is a Lambda function config associated with the source code: get-order-status.js
+  getOrderStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-order-status.getOrderStatusHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get Order Status
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: Order_status
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          ORDER_STATUS_TABLE: Order_status
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /order-status
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: get-retailer-order-summary-card.js
+  getRetailerOrderSummaryCardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-retailer-order-summary-card.getRetailerOrderSummaryCardHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get Retailer Order Summary Cards
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: Order
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          ORDER_TABLE: Order
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /cms/orders/retailer-cards/{retailer_id}
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+            RequestParameters:
+              - method.request.path.retailer_id
+  
+  # This is a Lambda function config associated with the source code: update-order-status.js
+  updtaeOrderStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/update-order-status.updateOrderStatusHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Order
+        - DynamoDBCrudPolicy:
+            TableName: Brands
+        - DynamoDBCrudPolicy:
+            TableName: Order_status
+        - DynamoDBCrudPolicy:
+            TableName: Templates
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+        - SESEmailTemplateCrudPolicy: {}
+        - SESBulkTemplatedCrudPolicy:
+            IdentityName: OrderMailTemplate
+            IdentityName: parkstreet.com
+        - SSMParameterReadPolicy:
+            ParameterName: stripe_test_key
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          ORDER_TABLE: Order
+          ORDER_STATUS_TABLE: Order_status
+          FE_DOMAIN_URL: !If [Is_Prod_Env, https://dtc.parkstreet.com, https://stgdtc.parkstreet.com]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /cms/orders/update-status
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: get-retailer-transaction-history.js
+  getRetailerTransactionHistoryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-retailer-transaction-history.getRetailerTransactionHistoryHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get Retailer Transaction History
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: Order
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /cms/retailer/transaction-history
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: get-dashboard-summary-card.js
+  getDashboardSummaryCardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-dashboard-summary-card.getDashboardSummaryCardHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get Dashboard Summary Cards
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Order
+        - SSMParameterReadPolicy:
+            ParameterName: es_config
+        - SSMParameterReadPolicy:
+            ParameterName: property_id
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /cms/dashboard/cards
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+    
+  # This is a Lambda function config associated with the source code: get-dashboard-orders.js
+  getDashboardOrdersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-dashboard-orders.getDashboardOrdersHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get Dashboard Orders
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Order
+        - SSMParameterReadPolicy:
+            ParameterName: es_config
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /cms/dashboard/orders
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: get-top-selling-products.js
+  getTopSellingProductsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-top-selling-products.getTopSellingProductsHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get Dashboard Top Selling Products
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Order
+        - DynamoDBCrudPolicy:
+            TableName: Products
+        - SSMParameterReadPolicy:
+            ParameterName: es_config
+        - SSMParameterReadPolicy:
+            ParameterName: buket_url
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /cms/dashboard/top-selling-products
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: shopping-cart-overview.js
+  shoppingCartOverviewFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/shopping-cart-overview.shoppingCartOverviewHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get Cart Overview
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Order
+        - DynamoDBCrudPolicy:
+            TableName: Cart
+        - SSMParameterReadPolicy:
+            ParameterName: es_config
+        - SSMParameterReadPolicy:
+            ParameterName: property_id
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /cms/dashboard/cart-overview
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction  
+
+Outputs:
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for staging stage"
+    Value: !Sub "https://77d880bvf0.execute-api.us-east-1.amazonaws.com/stg/"

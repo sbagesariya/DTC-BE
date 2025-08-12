@@ -1,0 +1,25 @@
+{
+    "name": "delete-test-01",
+    "description": "delete-test-01-description",
+    "version": "0.0.1",
+    "private": true,
+    "dependencies": {
+        "aws-sdk": "^2.1016.0",
+        "dynamoose": "^2.4.1",
+        "stripe": "^8.204.0",
+        "superagent": "^7.1.1"
+    },
+    "devDependencies": {
+        "jest": "^27.2.5"
+    },
+    "scripts": {
+        "test": "NODE_ENV=local jest --coverage",
+        "start": "sam build && sam local start-api"
+    },
+    "jest": {
+        "testPathIgnorePatterns": [
+            ".aws-sam",
+            "integration"
+        ]
+    }
+}

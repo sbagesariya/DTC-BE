@@ -1,0 +1,4 @@
+{
+    "httpMethod": "POST",
+    "body": "{\"brand_id\": \"id1\",\"secret_token\": \"name1\"}"
+}

@@ -1,0 +1,4 @@
+{
+    "httpMethod": "POST",
+    "body": "{\"brandid\": \"brandid1\",\"sort_by\": \"sort_by1\",\"size\": \"size1\",\"type\": \"type1\"}"
+}

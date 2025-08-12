@@ -1,0 +1,7 @@
+{
+    "httpMethod": "POST",
+    "body": {
+        "user_id": "user_id1",
+        "email": "email1"
+    }
+}

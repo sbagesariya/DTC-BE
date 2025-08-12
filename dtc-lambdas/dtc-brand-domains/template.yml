@@ -1,0 +1,248 @@
+# This is the SAM template that represents the architecture of your serverless application
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
+
+# The AWSTemplateFormatVersion identifies the capabilities of the template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  dtc-brand-domains
+
+Globals:
+  Function:
+    Timeout: 3
+  Api:
+    Cors:
+      AllowMethods: "'GET,HEAD,OPTIONS,POST,PUT,DELETE'"
+      AllowHeaders: "'Authorization, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, X-Api-Key'"
+      AllowOrigin: "'*'"
+      AllowCredentials: "'*'"
+
+Parameters:
+  ApiStageName:
+    Type: String
+    Default: stg
+    AllowedValues: [prod, stg]
+
+Conditions:
+  CreateProdResources: !Equals [!Ref ApiStageName, prod]
+  CreateDevResources: !Equals [!Ref ApiStageName, "stg"]
+
+# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
+Transform:
+- AWS::Serverless-2016-10-31
+
+# Resources declares the AWS resources that you want to include in the stack
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+Resources:
+  PortalAuthAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref ApiStageName
+      GatewayResponses:
+        DEFAULT_4xx:
+          ResponseParameters:
+            Headers:
+              Access-Control-Expose-Headers: "'WWW-Authenticate'"
+              Access-Control-Allow-Origin: "'*'"
+      OpenApiVersion: 3.0.1
+      Auth:
+        AddDefaultAuthorizerToCorsPreflight: false
+        DefaultAuthorizer: MyLambdaTokenAuthorizer
+        Authorizers:
+          MyLambdaTokenAuthorizer:
+            FunctionArn: !GetAtt PortalAuthFunction.Arn
+  PortalAuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: authorizer/handler.AuthorizerHandler
+      Runtime: nodejs12.x
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - SSMParameterReadPolicy:
+            ParameterName: JWT_SECRET
+
+  # This is to defined API-KEY for different stages
+  ApiKey:
+    Type: 'AWS::ApiGateway::ApiKey'
+    DependsOn:
+      - PortalAuthAPIStage
+    Properties:
+      Description: DTC-brand-domains API getway authentication api key
+      Enabled: 'true'
+      StageKeys:
+        - RestApiId: !Ref PortalAuthAPI
+          StageName: !Ref ApiStageName
+  # This is to define usage plan for APIs
+  UsagePlan:
+    Type: 'AWS::ApiGateway::UsagePlan'
+    DependsOn:
+      - PortalAuthAPI
+      - PortalAuthAPIStage
+    Properties:
+      ApiStages:
+        - ApiId: !Ref PortalAuthAPI
+          Stage: !Ref ApiStageName
+      Description: DTC-brand-domains API getway authentication usage plan
+      # Quota:
+      #   Limit: 5000
+      #   Period: MONTH
+      # Throttle:
+      #   BurstLimit: 200
+      #   RateLimit: 100
+      UsagePlanName: dtc-brand-domains-api-key
+  # This is to defined API-key with it's usage plan
+  UsagePlanKey:
+    Type: 'AWS::ApiGateway::UsagePlanKey'
+    DependsOn:
+      - ApiKey
+      - UsagePlan
+    Properties:
+      KeyId: !Ref ApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlan
+
+  # This is a Lambda function config associated with the source code: create-subdomain-under-ps.js
+  createSubDomainUnderPSFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/create-subdomain-under-ps.createSubDomainUnderPSHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: This function is used to create sub domain Under PS.
+      Role: arn:aws:iam::249339920956:role/marketplace-staging-mainrole
+      EventInvokeConfig:
+        DestinationConfig:
+          OnSuccess:
+            Type: Lambda
+            Destination: arn:aws:lambda:us-east-1:249339920956:function:remove_webhook          
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: Brand_domains
+      Environment:
+        Variables:
+          DomainBranch: !If [CreateProdResources, master, !If [CreateDevResources, staging, staging]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /ps/domain
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: create-existing-domain.js            
+  createExistingDomainFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/create-existing-domain.createExistingDomainHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: This function is used to create sub domain Under PS.
+      Role: arn:aws:iam::249339920956:role/marketplace-staging-mainrole
+      EventInvokeConfig:
+        DestinationConfig:
+          OnSuccess:
+            Type: Lambda
+            Destination: arn:aws:lambda:us-east-1:249339920956:function:remove_webhook          
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: Brand_domains
+      Environment:
+        Variables:
+          DomainBranch: !If [CreateProdResources, master, !If [CreateDevResources, staging, staging]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /ps/extdomain
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: get-all-brand-domains.js
+  getAllBrandDomainsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-all-brand-domains.getAllBrandDomainsHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get All Brand Domains
+      Role: arn:aws:iam::249339920956:role/marketplace-staging-mainrole
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: Brand_domains
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /brand/domains/{brand_id}
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+            RequestParameters:
+              - method.request.path.brand_id
+
+  # This is a Lambda function config associated with the source code: get-domain-association.js
+  getDomainAssociationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-domain-association.getDomainAssociationHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: This function is used to to get domain association.
+      Role: arn:aws:iam::249339920956:role/marketplace-staging-mainrole
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: Brand_domains
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /ps/domain/get-association
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+  
+  # This is a Lambda function config associated with the source code: check-sub-domain-availibility.js
+  checkSubDomainAvailibilityFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/check-sub-domain-availibility.checkSubDomainAvailibilityHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: This function is used to check sub domain availibility.
+      Role: arn:aws:iam::249339920956:role/marketplace-staging-mainrole
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: Brand_domains
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /ps/domain/availibility
+            Method: POST
+            Auth:
+              ApiKeyRequired: true              
+  # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
+
+Outputs:
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for staging stage"
+    Value: !Sub "https://77d880bvf0.execute-api.us-east-1.amazonaws.com/stg/"

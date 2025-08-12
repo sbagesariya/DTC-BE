@@ -1,0 +1,10 @@
+{
+    "httpMethod": "POST",
+    "body":   {
+        "retailer_id":"retailer_id",
+        "created_at": "created_at",
+        "unit_price": "unit_price",
+        "retailer_product_id": "retailer_product_id",
+        "stock": "stock"
+    }
+}

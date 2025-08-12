@@ -1,0 +1,282 @@
+# This is the SAM template that represents the architecture of your serverless application
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
+
+# The AWSTemplateFormatVersion identifies the capabilities of the template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  dtc-fulfillment
+
+Globals:
+  Function:
+    Timeout: 3
+  Api:
+    Cors:
+      AllowMethods: "'GET,HEAD,OPTIONS,POST,PUT,DELETE'"
+      AllowHeaders: "'Authorization, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, X-Api-Key'"
+      AllowOrigin: "'*'"
+      AllowCredentials: "'*'"
+
+Parameters:
+  ApiStageName:
+    Type: String
+    Default: stg
+    AllowedValues: [prod, stg]
+
+Conditions:
+  CreateProdResources: !Equals [!Ref ApiStageName, prod]
+  CreateDevResources: !Equals [!Ref ApiStageName, "stg"]
+
+# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
+Transform:
+- AWS::Serverless-2016-10-31
+
+# Resources declares the AWS resources that you want to include in the stack
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+Resources:
+  PortalAuthAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref ApiStageName
+      GatewayResponses:
+        DEFAULT_4xx:
+          ResponseParameters:
+            Headers:
+              Access-Control-Expose-Headers: "'WWW-Authenticate'"
+              Access-Control-Allow-Origin: "'*'"
+      OpenApiVersion: 3.0.1
+      Auth:
+        AddDefaultAuthorizerToCorsPreflight: false
+        DefaultAuthorizer: MyLambdaTokenAuthorizer
+        Authorizers:
+          MyLambdaTokenAuthorizer:
+            FunctionArn: !GetAtt PortalAuthFunction.Arn
+  PortalAuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: authorizer/handler.AuthorizerHandler
+      Runtime: nodejs12.x
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - SSMParameterReadPolicy:
+            ParameterName: JWT_SECRET
+
+  # This is to defined API-KEY for different stages
+  ApiKey:
+    Type: 'AWS::ApiGateway::ApiKey'
+    DependsOn:
+      - PortalAuthAPIStage
+    Properties:
+      Description: dtc-fulfillment API getway authentication api key
+      Enabled: 'true'
+      StageKeys:
+        - RestApiId: !Ref PortalAuthAPI
+          StageName: !Ref ApiStageName
+  # This is to define usage plan for APIs
+  UsagePlan:
+    Type: 'AWS::ApiGateway::UsagePlan'
+    DependsOn:
+      - PortalAuthAPI
+      - PortalAuthAPIStage
+    Properties:
+      ApiStages:
+        - ApiId: !Ref PortalAuthAPI
+          Stage: !Ref ApiStageName
+      Description: dtc-fulfillment API getway authentication usage plan
+      # Quota:
+      #   Limit: 5000
+      #   Period: MONTH
+      # Throttle:
+      #   BurstLimit: 200
+      #   RateLimit: 100
+      UsagePlanName: dtc-fulfillment-api-key
+  # This is to defined API-key with it's usage plan
+  UsagePlanKey:
+    Type: 'AWS::ApiGateway::UsagePlanKey'
+    DependsOn:
+      - ApiKey
+      - UsagePlan
+    Properties:
+      KeyId: !Ref ApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlan
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+
+  # This is a Lambda function config associated with the source code: get-markets.js
+  marketsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-markets.marketsHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get all items from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Markets
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          MARKETS_TABLE: Markets
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /markets
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: add-product-and-market-req.js
+  addProductAndMarketReqFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/add-product-and-market-req.AddProductAndMarketReqHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get all items from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+        - SESEmailTemplateCrudPolicy: {}
+        - SESBulkTemplatedCrudPolicy:
+            IdentityName: parkstreet.com
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /fulfill-product-market-req
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+              
+  # This is a Lambda function config associated with the source code: get-fulfillment-data.js
+  getFulfillmentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-fulfillment-data.FulfillmentHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get all items from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+        - DynamoDBCrudPolicy:
+            TableName: Products
+        - DynamoDBCrudPolicy:
+            TableName: Brands
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          PORTALUSERS_TABLE: Portal_users
+          PRODUCTS_TABLE: Products
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /preference/{brand_id}
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+            RequestParameters:
+              - method.request.path.brand_id
+                            
+  # This is a Lambda function config associated with the source code: save-fulfillment-preference.js
+  saveFulfillmentPreferenceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/save-fulfillment-preference.SaveFulfillmentPreferenceHandler
+      Runtime: nodejs12.x
+      MemorySize: 512
+      Timeout: 900
+      Description: A simple example includes a HTTP get method to get all items from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Brands
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_centers
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_inventory
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          PRODUCTS_TABLE: Brands
+          FULFILLMENT_PREFERENCE_API_URL: !If [CreateProdResources, https://ar34oqufle.execute-api.us-east-1.amazonaws.com/prod, !If [CreateDevResources, https://1sfalsxr2a.execute-api.us-east-1.amazonaws.com/stg, https://1sfalsxr2a.execute-api.us-east-1.amazonaws.com/stg]]
+          FULFILLMENT_API_KEY: !If [CreateProdResources, iIR4WMDbmiaYcicXeaVnS3R16r94muR45Qt1uM0X, !If [CreateDevResources, N6UhtIZg1w3Rt7ukcXmu56rEe6VKKpfy5nhDAM8B, N6UhtIZg1w3Rt7ukcXmu56rEe6VKKpfy5nhDAM8B]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /fulfillment-preference
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: save-fulfillment-settings.js
+  saveFulfillmentSettingsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/save-fulfillment-settings.SaveFulfillmentSettingsHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get all items from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_centers
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /fulfillment-settings
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+ # This is a Lambda function config associated with the source code: get-fulfillment-settings.js
+  getFulfillmentSettingsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-fulfillment-settings.GetFulfillmentSettingsHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get all items from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_centers
+        - DynamoDBCrudPolicy:
+            TableName: Brands
+        - DynamoDBCrudPolicy:
+            TableName: Markets
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /fulfillment-settings/{brand_id}
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+  # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
+
+Outputs:
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for staging stage"
+    Value: !Sub "https://77d880bvf0.execute-api.us-east-1.amazonaws.com/stg/"

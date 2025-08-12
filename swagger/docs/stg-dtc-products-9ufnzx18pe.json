@@ -1,0 +1,490 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "version" : "1.0",
+    "title" : "dtc-products"
+  },
+  "host" : "9ufnzx18pe.execute-api.us-east-1.amazonaws.com",
+  "basePath" : "/stg",
+  "schemes" : [ "https" ],
+  "paths" : {
+    "/alcohol-type" : {
+      "get" : {
+        "responses" : { },
+        "security" : [ {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cms/product/brand" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "API to get CMS products by brand ",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/GetCMSProductsByBrand"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cms/product/detail/{brand_id}/{product_id}" : {
+      "get" : {
+        "responses" : { },
+        "security" : [ {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cms/product/remove" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "API to remove products",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/RemoveProducts"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/product/brand" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "API to get products by brand",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/GetProductsByBrand"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/product/check-availability" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Check product availability",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CheckProductAvailability"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/product/detail" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Get Product Details",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ProductDetails"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/product/filters/{brandid}" : {
+      "get" : {
+        "responses" : { },
+        "security" : [ {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/product/list" : {
+      "get" : {
+        "responses" : { },
+        "security" : [ {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions" : {
+    "api_key" : {
+      "type" : "apiKey",
+      "name" : "x-api-key",
+      "in" : "header"
+    }
+  },
+  "definitions": {
+    "GetProductsByBrand": {
+      "type": "object",
+      "required": [
+        "brandid",
+        "template_id"
+      ],
+      "properties": {
+        "brandid": {
+          "type": "string",
+          "example": "9b9af5d1-d518-4441-9c98-9a477241ab91"
+        },
+        "template_id": {
+          "type": "string",
+          "example": "af169e51-d7e0-4bba-8aff-cadc0d4637a1"
+        },
+        "iscms": {
+          "type": "boolean",
+          "example": false
+        },
+        "sort_by": {
+          "type": "integer",
+          "example": 3
+        },
+        "size": {
+          "type": "array",
+          "example": []
+        },
+        "type": {
+          "type": "array",
+          "example": []
+        },
+        "limit": {
+          "type": "integer",
+          "example": 10
+        }
+      }
+    },
+    "ProductDetails": {
+      "type": "object",
+      "required": [
+        "brandid",
+        "retailer_id",
+        "template_id",
+        "productid"
+      ],
+      "properties": {
+        "brandid": {
+          "type": "string",
+          "example": "9b9af5d1-d518-4441-9c98-9a477241ab91"
+        },
+        "productId": {
+          "type": "string",
+          "example": "e989b400-9127-11eb-8d70-e50485037b57"
+        },
+        "retailer_id": {
+          "type": "string",
+          "example": "274ae582-f510-4885-a3b1-f1682acbf4c8"
+        },
+        "template_id": {
+          "type": "string",
+          "example": "51f462ba-decb-4970-84c4-73168004ac62"
+        }
+      }
+    },
+    "CheckProductAvailability": {
+      "type": "object",
+      "required": [
+        "brandId",
+        "productId"
+      ],
+      "properties": {
+        "brandid": {
+          "type": "string",
+          "example": "9b9af5d1-d518-4441-9c98-9a477241ab91"
+        },
+        "productId": {
+          "type": "string",
+          "example": "af169e51-d7e0-4bba-8aff-cadc0d4637a1"
+        },
+        "postalCode": {
+          "type": "string",
+          "example": "32306"
+        },
+        "lat": {
+          "type": "integer",
+          "example": 34.0751706
+        },
+        "lng": {
+          "type": "integer",
+          "example": -118.3773546
+        }
+      }
+    },
+    "GetCMSProductsByBrand": {
+      "type": "object",
+      "required": [
+        "brand_id",
+        "template_id"
+      ],
+      "properties": {
+        "brand_id": {
+          "type": "string",
+          "example": "9b9af5d1-d518-4441-9c98-9a477241ab91"
+        },
+        "iscms": {
+          "type": "boolean",
+          "example": false
+        },
+        "sort": {
+          "type": "string",
+          "example": "product_name"
+        },
+        "order": {
+          "type": "string",
+          "example": "asc"
+        },
+        "universal_search": {
+          "type": "string",
+          "example": ""
+        },
+        "limit": {
+          "type": "integer",
+          "example": 16
+        },
+        "lastKey": {
+          "type": "string",
+          "example": ""
+        }
+      }
+    },
+    "RemoveProducts": {
+      "type": "object",
+      "required": [
+        "brand_id",
+        "product_ids"
+      ],
+      "properties": {
+        "brand_id": {
+          "type": "string",
+          "example": "9b9af5d1-d518-4441-9c98-9a477241ab91"
+        },
+        "product_ids": {
+          "type": "array",
+          "example": ["7d289a9e-f198-4d39-b385-4ad95558c5c0"]
+        }
+      }
+    }
+  }
+}

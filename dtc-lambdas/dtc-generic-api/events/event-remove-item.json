@@ -1,0 +1,4 @@
+{
+    "httpMethod": "POST",
+    "body": "{\"tableName\": \"tableName1\",\"hash_key_name\": \"hash_key_name1\",\"hash_key_value\": \"hash_key_value1\",\"range_key_name\": \"range_key_name1\",\"range_key_value\": \"range_key_value1\"}"
+}

@@ -1,0 +1,226 @@
+# This is the SAM template that represents the architecture of your serverless application
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
+
+# The AWSTemplateFormatVersion identifies the capabilities of the template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  dtc-checkout
+
+Globals:
+  Function:
+    Timeout: 3
+  Api:
+    Cors:
+      AllowMethods: "'GET,HEAD,OPTIONS,POST,PUT,DELETE'"
+      AllowHeaders: "'Authorization, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, X-Api-Key'"
+      AllowOrigin: "'*'"
+      AllowCredentials: "'*'"
+Parameters:
+  ApiStageName:
+    Type: String
+    Default: stg
+
+Conditions:
+  CreateProdResources: !Equals [!Ref ApiStageName, prod]
+  CreateDevResources: !Equals [!Ref ApiStageName, "stg"]
+# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
+Transform:
+- AWS::Serverless-2016-10-31
+
+# Resources declares the AWS resources that you want to include in the stack
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+Resources:
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  APIKeyAuth:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref ApiStageName
+      OpenApiVersion: 3.0.1
+      
+   # This is to defined API-KEY for different stages
+  ApiKey:
+    Type: 'AWS::ApiGateway::ApiKey'
+    DependsOn:
+      - APIKeyAuthStage
+    Properties:
+      Description: DTC-checkout API getway authentication api key
+      Enabled: 'true'
+      StageKeys:
+        - RestApiId: !Ref APIKeyAuth
+          StageName: !Ref ApiStageName
+  # This is to define usage plan for APIs
+  UsagePlan:
+    Type: 'AWS::ApiGateway::UsagePlan'
+    DependsOn:
+      - APIKeyAuth
+      - APIKeyAuthStage
+    Properties:
+      ApiStages:
+        - ApiId: !Ref APIKeyAuth
+          Stage: !Ref ApiStageName
+      Description: DTC-checkout API getway authentication usage plan
+      # Quota:
+      #   Limit: 5000
+      #   Period: MONTH
+      # Throttle:
+      #   BurstLimit: 200
+      #   RateLimit: 100
+      UsagePlanName: dtc-checkout-api-key
+  # This is to defined API-key with it's usage plan
+  UsagePlanKey:
+    Type: 'AWS::ApiGateway::UsagePlanKey'
+    DependsOn:
+      - ApiKey
+      - UsagePlan
+    Properties:
+      KeyId: !Ref ApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlan
+  # This is a Lambda function config associated with the source code: put-item.js
+  GetOrdersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-orders.GetOrdersHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Order        
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          ORDER_TABLE:  Order
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /get-orders
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  ConfirmOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/update-order.ConfirmOrderHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Order
+        - DynamoDBCrudPolicy:
+            TableName: Inventory
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_centers
+        - DynamoDBCrudPolicy:
+            TableName: Templates
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_inventory
+        - SESEmailTemplateCrudPolicy: {}
+        - SESBulkTemplatedCrudPolicy:
+            IdentityName: OrderMailTemplate
+            IdentityName: parkstreet.com
+        - SSMParameterReadPolicy:
+            ParameterName: lnj_group_token
+        - SSMParameterReadPolicy:
+            ParameterName: stripe_test_key
+        - DynamoDBCrudPolicy:
+            TableName: Inventory
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          ORDER_TABLE:  Order
+          NAV_PUBLIC_API_URL: !If [CreateProdResources, https://api.parkstreet.com, !If [CreateDevResources, https://stgapi.parkstreet.com, https://stgapi.parkstreet.com]]
+          WAREHOUSE: !If [CreateProdResources, 9, !If [CreateDevResources, 9, 9]]
+          LOCATION_GROUP: !If [CreateProdResources, 69, !If [CreateDevResources, 69, 69]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /confirm-orders
+            Method: PUT
+            Auth:
+              ApiKeyRequired: true
+
+  UpdtaeOrderStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/update-order-status.UpdateOrderStatusHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Order
+        - DynamoDBCrudPolicy:
+            TableName: Templates
+        - SESEmailTemplateCrudPolicy: {}
+        - SESBulkTemplatedCrudPolicy:
+            IdentityName: OrderMailTemplate
+            IdentityName: parkstreet.com
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          ORDER_TABLE:  Order
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /update-order-status
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+  
+  ValidateOrderComplianceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/validate-order-compliance.ValidateOrderComplianceHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Validate Order Compliance
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Order
+        - SSMParameterReadPolicy:
+            ParameterName: sovoscred
+        - DynamoDBCrudPolicy:
+            TableName: ship_compliant_order_log
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          ORDER_TABLE:  Order
+          SHIP_COMPLAINCE_API_URL: !If [CreateProdResources, https://restapi-staging.shipcompliant.com, !If [CreateDevResources, https://restapi-staging.shipcompliant.com, https://restapi-staging.shipcompliant.com]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /ship-complaince-order-validate
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+  # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
+
+Outputs:
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for staging stage"
+    Value: !Sub "https://77d880bvf0.execute-api.us-east-1.amazonaws.com/stg/"

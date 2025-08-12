@@ -1,0 +1,113 @@
+# This is the SAM template that represents the architecture of your serverless application
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
+
+# The AWSTemplateFormatVersion identifies the capabilities of the template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  dtc-promo-code
+
+Globals:
+  Function:
+    Timeout: 3
+  Api:
+    Cors:
+      AllowMethods: "'GET,HEAD,OPTIONS,POST,PUT,DELETE'"
+      AllowHeaders: "'Authorization, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, X-Api-Key'"
+      AllowOrigin: "'*'"
+      AllowCredentials: "'*'"
+
+Parameters:
+  ApiStageName:
+    Type: String
+    Default: stg
+
+# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
+Transform:
+- AWS::Serverless-2016-10-31
+
+# Resources declares the AWS resources that you want to include in the stack
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+Resources:
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  APIKeyAuth:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref ApiStageName
+      OpenApiVersion: 3.0.1
+      
+   # This is to defined API-KEY for different stages
+  ApiKey:
+    Type: 'AWS::ApiGateway::ApiKey'
+    DependsOn:
+      - APIKeyAuthStage
+    Properties:
+      Description: DTC-promo-code API getway authentication api key
+      Enabled: 'true'
+      StageKeys:
+        - RestApiId: !Ref APIKeyAuth
+          StageName: !Ref ApiStageName
+  # This is to define usage plan for APIs
+  UsagePlan:
+    Type: 'AWS::ApiGateway::UsagePlan'
+    DependsOn:
+      - APIKeyAuth
+      - APIKeyAuthStage
+    Properties:
+      ApiStages:
+        - ApiId: !Ref APIKeyAuth
+          Stage: !Ref ApiStageName
+      Description: DTC-promo-code API getway authentication usage plan
+      # Quota:
+      #   Limit: 5000
+      #   Period: MONTH
+      # Throttle:
+      #   BurstLimit: 200
+      #   RateLimit: 100
+      UsagePlanName: dtc-promo-code-api-key
+  # This is to defined API-key with it's usage plan
+  UsagePlanKey:
+    Type: 'AWS::ApiGateway::UsagePlanKey'
+    DependsOn:
+      - ApiKey
+      - UsagePlan
+    Properties:
+      KeyId: !Ref ApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlan
+  # This is a Lambda function config associated with the source code: verify-promo-code.js
+  verifyPromoCodeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/verify-promo-code.verifyPromoCodeHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Verify Promo Code Function
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Cart
+        - DynamoDBCrudPolicy:
+            TableName: Promo_code
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          PROMO_CODE_TABLE: Promo_code
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /promo-code/verify
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
+
+Outputs:
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for stg stage"
+    Value: !Sub "https://77d880bvf0.execute-api.us-east-1.amazonaws.com/stg/"

@@ -1,0 +1,49 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "version" : "1.0",
+    "title" : "dtc-orders"
+  },
+  "host" : "dv2tgxq59a.execute-api.us-east-1.amazonaws.com",
+  "basePath" : "/stg",
+  "schemes" : [ "https" ],
+  "paths" : {
+    "/order-status" : {
+      "get" : {
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions" : {
+    "api_key" : {
+      "type" : "apiKey",
+      "name" : "x-api-key",
+      "in" : "header"
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+    "type": "custom",
+    "country": "US",
+    "business_type": "company",
+    "email": "",
+    "capabilities": {
+        "card_payments": {
+            "requested": true
+        },
+        "transfers": {
+            "requested": true
+        }
+    },
+    "tos_acceptance": {
+        "date": "1609798905",
+        "ip": "8.8.8.8"
+    },
+    "external_account": {
+        "object": "bank_account",
+        "country": "US",
+        "currency": "USD",
+        "routing_number": "110000000",
+        "account_number": "000123456789"
+    },
+    "company": {
+        "name": "Park street",
+        "phone": "+14545454545",
+        "tax_id": "123123",
+        "owners_provided": true,
+        "address": {
+            "city": "Miami",
+            "country": "US",
+            "line1": "1000 Brickell Avenu",
+            "line2": "",
+            "postal_code": "33131",
+            "state": "FL"
+        }
+    },   
+    "business_profile": {
+        "url": "http://www.myprofile.com",
+        "mcc": "5734",
+        "name": "ParkStreet Company-1",
+        "support_email": "help@ps.co",
+        "support_phone": "+17777777777",
+        "support_url": "https://www.parkstreet.com/support"
+    }  
+}

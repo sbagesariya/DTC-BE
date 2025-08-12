@@ -1,0 +1,7 @@
+{
+    "httpMethod": "DELETE",
+    "pathParameters": {
+        "userId": "userId1",
+        "productId": "productId1"
+    }
+}

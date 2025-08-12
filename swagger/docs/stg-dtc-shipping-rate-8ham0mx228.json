@@ -1,0 +1,156 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "version" : "1.0",
+    "title" : "dtc-shipping-rate"
+  },
+  "host" : "8ham0mx228.execute-api.us-east-1.amazonaws.com",
+  "basePath" : "/stg",
+  "schemes" : [ "https" ],
+  "paths" : {
+    "/cms/shipping-rate" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Add shipping rate",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/addShippingRate"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cms/shipping-rate/{retailer_id}" : {
+      "get" : {
+        "parameters" : [
+          {
+            "name" : "retailer_id",
+            "in" : "path",
+            "required" : false,
+            "type" : "string"
+          } 
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions" : {
+    "api_key" : {
+      "type" : "apiKey",
+      "name" : "x-api-key",
+      "in" : "header"
+    },
+    "MyLambdaTokenAuthorizer" : {
+      "type" : "apiKey",
+      "name" : "Authorization",
+      "in" : "header",
+      "x-amazon-apigateway-authtype" : "custom"
+    }
+  },
+  "definitions": {
+    "addShippingRate": {
+      "type": "object",
+      "required": [
+        "retailer_id",
+        "retailer_name",
+        "shipping_option"
+      ],
+      "properties": {
+        "retailer_id": {
+          "type": "string",
+          "example": "07f751ba-e845-4489-8ca3-823e4c9852e5"
+        },
+        "retailer_name": {
+          "type": "string",
+          "example": "Sky"
+        },
+        "shipping_option": {
+          "type": "integer",
+          "example": 2,
+          "note": "Pass Option 1/2/3"
+        },
+        "ship_rate_flat_amount": {
+          "type": "integer",
+          "example": 51,
+          "note": "Pass if Option is 1"
+        },
+        "shipping_tier": {
+          "type": "object",
+          "note": "Pass if Option is 2",
+          "example": 
+          [
+            {
+              "tier_order": 1,
+              "tier_starts": 0,
+              "tier_ends": 100,
+              "tier_amount": 10
+            },
+            {
+              "tier_order": 2,
+              "tier_starts": 101,
+              "tier_ends": 200,
+              "tier_amount": 20
+            }
+          ]          
+        }
+      }
+    }
+  }
+}

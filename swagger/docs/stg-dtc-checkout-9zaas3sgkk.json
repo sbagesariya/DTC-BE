@@ -1,0 +1,214 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "version" : "1.0",
+    "title" : "dtc-checkout"
+  },
+  "host" : "9zaas3sgkk.execute-api.us-east-1.amazonaws.com",
+  "basePath" : "/stg",
+  "schemes" : [ "https" ],
+  "paths" : {
+    "/confirm-orders" : {
+      "put" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Confirm orders",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfirmOrders"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-orders" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Get orders",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/GetOrders"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/update-order-status" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Update order status",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UpdateOrderStatus"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions" : {
+    "api_key" : {
+      "type" : "apiKey",
+      "name" : "x-api-key",
+      "in" : "header"
+    }
+  },
+  "definitions": {
+    "ConfirmOrders": {
+      "type": "object",
+      "required": [
+        "brand_id",
+        "order_id",
+        "createdAt"
+      ],
+      "properties": {
+        "brand_id": {
+          "type": "string",
+          "example": "8fe49d41-c91d-46c3-a4f8-86be6483c186"
+        },
+        "order_id": {
+          "type": "string",
+          "example": "490248-FF65B"
+        },
+        "createdAt": {
+          "type": "integer",
+          "example": 1615360434608
+        }
+      }
+    },
+    "GetOrders": {
+      "type": "object",
+      "properties": {
+        "order_id": {
+          "type": "string",
+          "example": "490248-FF65B"
+        },
+        "user_email": {
+          "type": "string",
+          "example": "jt@test.com"
+        }
+      }
+    },
+    "UpdateOrderStatus": {
+      "type": "object",
+      "required": [
+        "brand_id",
+        "order_id",
+        "retailer_id",
+        "order_status",
+        "createdAt"
+      ],
+      "properties": {
+        "brand_id": {
+          "type": "string",
+          "example": "8fe49d41-c91d-46c3-a4f8-86be6483c186"
+        },
+        "order_id": {
+          "type": "string",
+          "example": "3c52c188-8f75-4b15-9717-d947d0d673c6"
+        },
+        "retailer_id": {
+          "type": "string",
+          "example": "1b3209d1-0e86-474e-9aa2-e4369b778e69"
+        },
+        "order_status": {
+          "type": "string",
+          "example": "Shipped"
+        },
+        "createdAt": {
+          "type": "integer",
+          "example": 1615360434608
+        }
+      }
+    }
+  }
+}

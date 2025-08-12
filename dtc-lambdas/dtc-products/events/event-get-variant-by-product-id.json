@@ -1,0 +1,10 @@
+{
+    "httpMethod": "POST",
+    "body": {
+        "brand_id": "9b9af5d1-d518-4441-9c98-9a477241ab91",
+        "product_id": "4e4e3467-bd0a-4d85-a3af-c7008d0b1aa3",
+        "limit": 5,
+        "order": "asc",
+	    "sort": "upc"
+    }
+}

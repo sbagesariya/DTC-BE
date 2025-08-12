@@ -1,0 +1,4 @@
+{
+    "httpMethod": "POST",
+    "body": "{\"amount\": \"amount1\"}"
+}

@@ -1,0 +1,32 @@
+{
+    "first_name": "",
+    "last_name": "",
+    "address": {
+        "city": "Miami",
+        "country": "US",
+        "line1": "1000 Brickell Avenu",
+        "line2": "",
+        "postal_code": "33131",
+        "state": "FL"
+    },
+    "email": "",
+    "phone": "",
+    "dob": {
+        "day": "04",
+        "month": "09",
+        "year": "1989"
+    },
+    "relationship": {
+        "title": "CEO",
+        "owner": true,
+        "representative": true,
+        "percent_ownership": 100
+    },
+    "ssn_last_4": "8888",
+    "verification": {
+        "document": {
+            "front": "",
+            "back": ""
+        }
+    }
+}

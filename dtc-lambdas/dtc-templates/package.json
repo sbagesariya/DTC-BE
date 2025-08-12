@@ -1,0 +1,20 @@
+{
+    "name": "delete-test-01",
+    "description": "delete-test-01-description",
+    "version": "0.0.1",
+    "private": true,
+    "dependencies": {
+        "aws-sdk": "^2.437.0",
+        "dynamoose": "^2.6.0",
+        "jsonwebtoken": "^8.5.1"
+    },
+    "jest": {
+        "testPathIgnorePatterns": [".aws-sam"]
+      },
+    "devDependencies": {
+        "jest": "^24.9.0"
+    },
+    "scripts": {
+        "test": "NODE_ENV=local jest --coverage"
+    }
+}

@@ -1,0 +1,4 @@
+node_modules
+**/.aws-sam
+**/**/.aws-sam
+**/**/coverage

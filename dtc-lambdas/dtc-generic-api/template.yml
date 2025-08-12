@@ -1,0 +1,963 @@
+# This is the SAM template that represents the architecture of your serverless application
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
+
+# The AWSTemplateFormatVersion identifies the capabilities of the template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  dtc-generic-api
+
+Globals:
+  Function:
+    Timeout: 3
+  Api:
+    # BinaryMediaTypes:
+    #     - "*~1*"
+    Cors:
+      AllowMethods: "'GET,HEAD,OPTIONS,POST,PUT,DELETE'"
+      AllowHeaders: "'Authorization, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, X-Api-Key'"
+      AllowOrigin: "'*'"
+      AllowCredentials: "'*'"
+
+Parameters:
+  ApiStageName:
+    Type: String
+    Default: stg
+    AllowedValues: [prod, stg]
+
+Conditions:
+  CreateProdResources: !Equals [!Ref ApiStageName, prod]
+  CreateDevResources: !Equals [!Ref ApiStageName, "stg"]
+
+# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
+Transform:
+- AWS::Serverless-2016-10-31
+
+# Resources declares the AWS resources that you want to include in the stack
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+Resources:
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  APIKeyAuth:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref ApiStageName
+      OpenApiVersion: 3.0.1
+   # This is to defined API-KEY for different stages
+  ApiKey:
+    Type: 'AWS::ApiGateway::ApiKey'
+    DependsOn:
+      - APIKeyAuthStage
+    Properties:
+      Description: DTC-generic-api API getway authentication api key
+      Enabled: 'true'
+      StageKeys:
+        - RestApiId: !Ref APIKeyAuth
+          StageName: !Ref ApiStageName
+  # This is to define usage plan for APIs
+  UsagePlan:
+    Type: 'AWS::ApiGateway::UsagePlan'
+    DependsOn:
+      - APIKeyAuth
+      - APIKeyAuthStage
+    Properties:
+      ApiStages:
+        - ApiId: !Ref APIKeyAuth
+          Stage: !Ref ApiStageName
+      Description: DTC-generic-api API getway authentication usage plan
+      # Quota:
+      #   Limit: 5000
+      #   Period: MONTH
+      # Throttle:
+      #   BurstLimit: 200
+      #   RateLimit: 100
+      UsagePlanName: dtc-generic-api-key
+  # This is to defined API-key with it's usage plan
+  UsagePlanKey:
+    Type: 'AWS::ApiGateway::UsagePlanKey'
+    DependsOn:
+      - ApiKey
+      - UsagePlan
+    Properties:
+      KeyId: !Ref ApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlan
+  # This is a Lambda function config associated with the source code: put-item.js
+  putItemFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/post-item.PostItemHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        # - DynamoDBCrudPolicy:
+        #     TableName: SampleTable
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          TABLE_NAMES: Products,Brands,Templates,Cart,Alcohol_type,Brand_recipes,Inventory
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /postitem
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: remove-item.js
+  removeItemFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/remove-item.RemoveItemHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        # - DynamoDBCrudPolicy:
+        #     TableName: SampleTable
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          TABLE_NAMES: Products,Brands,Templates,Cart,Alcohol_type,Brand_recipes
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /removeitem
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: add-default-template-brands.js
+  addDefaultTemplateBrandsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/add-default-template-brands.addDefaultTemplateBrandsHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Template_master      
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+        - DynamoDBCrudPolicy:
+            TableName: Templates
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          TEMPLATE_MASTER_TABLE: Template_master
+          PORTAL_USER_TABLE: Portal_users
+          TEMPLATES_TABLE: Templates          
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /add-default-template-brands
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+    # This is a Lambda function config associated with the source code: add-default-template-brands.js
+  imageUploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/upload-image.UploadImageHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - S3CrudPolicy:
+            BucketName: !If [CreateProdResources, dtc-prod-public, !If [CreateDevResources, dtc-stg-public, dtc-stg-public]]
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          BucketName: !If [CreateProdResources, dtc-prod-public, !If [CreateDevResources, dtc-stg-public, dtc-stg-public]]
+          BucketURL: !If [CreateProdResources, https://dtc-prod-public.s3.amazonaws.com, !If [CreateDevResources, https://dtc-stg-public.s3.amazonaws.com, https://dtc-stg-public.s3.amazonaws.com]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /upload-image
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: add-product-status.js
+  addProductStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/add-product-status.addProductStatusHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+         # Give Create/Read/Update/Delete Permissions to the SampleTable
+         - DynamoDBCrudPolicy:
+             TableName: Products
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          TABLE_NAMES: Products
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /add/product-status
+            Method: POST
+
+  # This is a Lambda function config associated with the source code: add-search-field-data.js
+  addSearchFieldDataOrderTable:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/add-search-field-data.addSearchFieldDataOrderTableHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 900
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Order
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          ORDER_TABLE: Order
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /order/add-search-filed-data
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: update-created-date-order-table.js
+  updateCreatedDateOrderTable:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/update-created-date-order-table.updateCreatedDateOrderTableHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 200
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Order
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          ORDER_TABLE: Order
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /order/update-created-date
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+  # This is a Lambda function config associated with the source code: add-retailer-detail-to-orders.js
+  addRetailerDataToOrders:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/add-retailer-detail-to-orders.AddRetailerDetailToOrdersHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 200
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Order
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          ORDER_TABLE: Order
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /order/add-retailer-detail
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+   # This is a Lambda function config associated with the source code: add-estimated-date-to-orders.js
+  addEstimatedDateToOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/add-estimated-date-to-orders.addEstimatedDateHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 200
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Order
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          ORDER_TABLE: Order
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /order/calculate-est-date
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: update-order-status.js
+  updateOrderStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/update-order-status.updateOrderStatusHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+         # Give Create/Read/Update/Delete Permissions to the SampleTable
+         - DynamoDBCrudPolicy:
+             TableName: Order
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          TABLE_NAMES: Order
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /order/update-status
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: add-product-data-to-size-variant.js
+  addProductDataToSizeVariant:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/add-product-data-to-size-variant.AddProductDataToSizeVariantHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 200
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Order
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          ORDER_TABLE: Order
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /order/add-product-detail-to-size-variant
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: add-min-max-product-content.js
+  addMinMaxProductContentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/add-min-max-product-content.addMinMaxProductContentHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Template_master
+        - DynamoDBCrudPolicy:
+            TableName: Saved_templates
+        - DynamoDBCrudPolicy:
+            TableName: Templates
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          TEMPLATE_MASTER_TABLE: Template_master
+          SAVED_TEMPLATES_TABLE: Saved_templates
+          TEMPLATES_TABLE: Templates
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /add-min-max-product-content
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: update-old-templates-fields.js
+  updateOldTemplatesFieldsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/update-old-templates-fields.updateOldTemplatesFieldsHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 200
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Templates
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          TEMPLATES_TABLE: Templates
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /templates/update-old-fields
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: add-retailer-profile-menu.js
+  addRetailerProfileMenuFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/add-retailer-profile-menu.addRetailerProfileMenuHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+         # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Menu
+        - DynamoDBCrudPolicy:
+            TableName: Menu_permissions
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /menu/add-retailer-profile
+            Method: POST
+
+  # This is a Lambda function config associated with the source code: add-retailer-profile-menu.js
+  getDataFromESFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-data-from-es.getDataFromESHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+         # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Menu
+        - DynamoDBCrudPolicy:
+            TableName: Menu_permissions
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /get-es-data
+            Method: GET
+
+  # This is a Lambda function config associated with the source code: assign-brand-user-role-permission.js
+  assignBrandUserRolePermission:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/assign-brand-user-role-permission.assignBrandUserRolePermissionHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+         # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Roles
+        - DynamoDBCrudPolicy:
+            TableName: Menu_permissions
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /brand/assign-role-permission
+            Method: POST
+
+  # This is a Lambda function config associated with the source code: update-user-dob-order.js
+  updateUserDOBOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/update-user-dob-order.updateUserDOBOrderHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+         - DynamoDBCrudPolicy:
+             TableName: Order
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /order/update-user-dob
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+    
+  # This is a Lambda function config associated with the source code: add-fulfillment-preference-menu-in-roles.js
+  addFulfillmentPreferenceMenuInRoles:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/add-fulfillment-preference-menu-in-roles.addFulfillmentPreferenceMenuInRolesHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+         # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Roles
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /brand/add-fulfillment-preference-menu
+            Method: POST
+
+  # This is a Lambda function config associated with the source code: add-default-market-limit-to-brand.js
+  addDefaultMarketLimitFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/add-default-market-limit-to-brand.addDefaultMarketLimitHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+         # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /brand/add-default-market-limit
+            Method: POST
+  
+  # This is a Lambda function config associated with the source code: add-fulfillment-settings-menu-role-permission.js
+  addFulfillmentSettingsMenuRolePermissionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/add-fulfillment-settings-menu-role-permission.addFulfillmentSettingsMenuRolePermissionHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Menu
+        - DynamoDBCrudPolicy:
+            TableName: Menu_permissions
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+        - DynamoDBCrudPolicy:
+            TableName: Roles
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /menu/add-fulfillment-settings
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+
+  # This is a Lambda function config associated with the source code: create-beta-brand-user.js
+  CreateBetaBrandUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/create-beta-brand-user.CreateBetaBrandUserHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: create beta brand user
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+        - DynamoDBCrudPolicy:
+            TableName: Menu
+        - DynamoDBCrudPolicy:
+            TableName: Roles
+        - DynamoDBCrudPolicy:
+            TableName: Menu_permissions
+        - DynamoDBCrudPolicy:
+            TableName: Brands
+        - DynamoDBCrudPolicy:
+            TableName: Company
+        - SSMParameterReadPolicy:
+            ParameterName: login_kms
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_centers
+        - KMSEncryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]
+        - KMSDecryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /create-beta-brand-user
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: create-beta-retailer-user.js
+  CreateBetaRetailerUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/create-beta-retailer-user.CreateBetaRetailerUserHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        - DynamoDBCrudPolicy:
+             TableName: Portal_users
+        - DynamoDBCrudPolicy:
+             TableName: Menu_permissions
+        - DynamoDBCrudPolicy:
+             TableName: Retailers_addresses
+        - DynamoDBCrudPolicy:
+             TableName: Retailers
+        - SSMParameterReadPolicy:
+            ParameterName: login_kms
+        - KMSEncryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]
+        - KMSDecryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /create-beta-retailer-user
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+  # This is a Lambda function config associated with the source code: create-public-api-token.js
+  createPublicTokenFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/create-public-api-token.CreatePublicTokenHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Function to create public api token and assigned per brand
+      Policies:
+         # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+        - DynamoDBCrudPolicy:
+            TableName: Public_api_tokens
+        - SSMParameterReadPolicy:
+            ParameterName: login_kms
+        - KMSEncryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]
+        - KMSDecryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /brand/create-public-token
+            Method: POST               
+
+  # This is a Lambda function config associated with the source code: assign-public-token-to-brand.js
+  assignPublicTokenToNewBrandFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/assign-public-token-to-brand.AssignPublicTokenToNewBrandHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Function to create public api token and assigned per brand
+      Policies:
+         # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+        - DynamoDBCrudPolicy:
+            TableName: Public_api_tokens
+        - SSMParameterReadPolicy:
+            ParameterName: login_kms
+        - KMSEncryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]
+        - KMSDecryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /brand/assign-public-token
+            Method: POST
+
+  # This is a Lambda function config associated with the source code: add-customer-id-to-user.js
+  addCustomerIdToUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/add-customer-id-to-user.AddCustomerIdToUserHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Function to add customer_id in user table
+      Policies:
+         # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Users
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /user/add-customer-id
+            Method: POST
+
+  # This is a Lambda function config associated with the source code: update-sku-code.js
+  updateSkuCodeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/update-sku-code.UpdateSkuCodeHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Function to update exsting records sku_code
+      Policies:
+         # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Size_variants
+        - DynamoDBCrudPolicy:
+            TableName: Inventory
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_inventory
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /update-sku-code
+            Method: POST
+
+  # This is a Lambda function config associated with the source code: update-product-shipping-option.js
+  updateProductShippingOptionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/update-product-shipping-option.updateProductShippingOptionHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Update product shipping option
+      Policies:
+         # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Products
+        - DynamoDBCrudPolicy:
+            TableName: Saved_products
+        - DynamoDBCrudPolicy:
+            TableName: Inventory
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_inventory
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /update-shipping-option
+            Method: POST
+
+  # This is a Lambda function config associated with the source code: update-product-inventory.js
+  updateProductInventoryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/update-product-inventory.updateProductInventoryHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Function to use to update the product inventory from navigator
+      Policies:
+         # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Inventory
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_inventory
+        - SSMParameterReadPolicy:
+            ParameterName: lnj_group_token
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          NAV_PUBLIC_API_URL: !If [CreateProdResources, https://api.parkstreet.com, !If [CreateDevResources, https://stgapi.parkstreet.com, https://stgapi.parkstreet.com]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /product/update-inventory
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: add-fulfillment-inventory-product.js
+  addFulfillmentInventoryProductFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/add-fulfillment-inventory-product.AddFulfillmentInventoryProductHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 900
+      Description: Function to use to update the product inventory from navigator
+      Policies:
+         # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Products
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_inventory_test
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_inventory
+        - DynamoDBCrudPolicy:
+            TableName: Size_variants
+        - DynamoDBCrudPolicy:
+            TableName: Brands
+        - DynamoDBCrudPolicy:
+            TableName: Inventory
+        - SSMParameterReadPolicy:
+            ParameterName: lnj_group_token
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          FULFILLMENT_INVENTORY_TABLE: 'Fulfillment_inventory'
+          DTC_UPDATE_FULFILLENT_INVENTORY_URL: !If [CreateProdResources, https://ar34oqufle.execute-api.us-east-1.amazonaws.com/prod, !If [CreateDevResources, https://1sfalsxr2a.execute-api.us-east-1.amazonaws.com/stg, https://1sfalsxr2a.execute-api.us-east-1.amazonaws.com/stg]]
+          DTC_UPDATE_FULFILLENT_INVENTORY_APIKEY: !If [CreateProdResources, iIR4WMDbmiaYcicXeaVnS3R16r94muR45Qt1uM0X, !If [CreateDevResources, N6UhtIZg1w3Rt7ukcXmu56rEe6VKKpfy5nhDAM8B, N6UhtIZg1w3Rt7ukcXmu56rEe6VKKpfy5nhDAM8B]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /product/add-fulfillment-inventory-product
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: import-data.js
+  importDataFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/import-data.importDataHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 900
+      Description: Function to use to update the product inventory from navigator
+      Policies:
+         # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Cart1
+        - DynamoDBCrudPolicy:
+            TableName: Cart       
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          FULFILLMENT_INVENTORY_TABLE: 'Fulfillment_inventory'
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /import-data
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: get-update-existing-records.js
+  getUpdateExistingRecordsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-update-existing-records.GetUpdateExistingRecordsHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 500
+      Description: Get records from table & update existing records
+      Policies:
+         # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Products
+        - DynamoDBCrudPolicy:
+            TableName: Inventory
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_inventory
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /get-update-existing-records
+            Method: POST
+
+  # This is a Lambda function config associated with the source code: create-stripe-connect-account.js
+  createStripeConnectAccountFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/create-stripe-connect-account.CreateStripeConnectAccountHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Function to create stripe connect account
+      Policies:
+         # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+        - DynamoDBCrudPolicy:
+            TableName: Retailers
+        - SSMParameterReadPolicy:
+            ParameterName: stripe_test_key
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /stripe/create-connect-account
+            Method: POST
+
+  # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
+
+
+Outputs:
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for staging stage"
+    Value: !Sub "https://77d880bvf0.execute-api.us-east-1.amazonaws.com/stg/"

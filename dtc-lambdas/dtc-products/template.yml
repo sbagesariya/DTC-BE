@@ -1,0 +1,632 @@
+# This is the SAM template that represents the architecture of your serverless application
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
+
+# The AWSTemplateFormatVersion identifies the capabilities of the template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  dtc-products
+
+Globals:
+  Function:
+    Timeout: 3
+  Api:
+    Cors:
+      AllowMethods: "'GET,HEAD,OPTIONS,POST,PUT,DELETE'"
+      AllowHeaders: "'Authorization, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, X-Api-Key'"
+      AllowOrigin: "'*'"
+      AllowCredentials: "'*'"
+
+Parameters:
+  ApiStageName:
+    Type: String
+    Default: stg
+    AllowedValues: [prod, stg]
+
+Conditions:
+  CreateProdResources: !Equals [!Ref ApiStageName, prod]
+  CreateDevResources: !Equals [!Ref ApiStageName, "stg"]
+
+# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
+Transform:
+- AWS::Serverless-2016-10-31
+
+# Resources declares the AWS resources that you want to include in the stack
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+Resources:
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  PortalAuthAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref ApiStageName
+      GatewayResponses:
+        DEFAULT_4xx:
+          ResponseParameters:
+            Headers:
+              Access-Control-Expose-Headers: "'WWW-Authenticate'"
+              Access-Control-Allow-Origin: "'*'"
+      OpenApiVersion: 3.0.1
+      Auth:
+        AddDefaultAuthorizerToCorsPreflight: false
+        DefaultAuthorizer: MyLambdaTokenAuthorizer
+        Authorizers:
+          MyLambdaTokenAuthorizer:
+            FunctionArn: !GetAtt PortalAuthFunction.Arn
+  PortalAuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: authorizer/handler.AuthorizerHandler
+      Runtime: nodejs12.x
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - SSMParameterReadPolicy:
+            ParameterName: JWT_SECRET
+
+  APIKeyAuth:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref ApiStageName
+      OpenApiVersion: 3.0.1
+      
+   # This is to defined API-KEY for different stages
+  ApiKey:
+    Type: 'AWS::ApiGateway::ApiKey'
+    DependsOn:
+      - APIKeyAuthStage
+      - PortalAuthAPIStage
+    Properties:
+      Description: DTC-products API getway authentication api key
+      Enabled: 'true'
+      StageKeys:
+        - RestApiId: !Ref APIKeyAuth
+          StageName: !Ref ApiStageName
+        - RestApiId: !Ref PortalAuthAPI
+          StageName: !Ref ApiStageName
+  # This is to define usage plan for APIs
+  UsagePlan:
+    Type: 'AWS::ApiGateway::UsagePlan'
+    DependsOn:
+      - APIKeyAuth
+      - APIKeyAuthStage
+      - PortalAuthAPI
+      - PortalAuthAPIStage
+    Properties:
+      ApiStages:
+        - ApiId: !Ref APIKeyAuth
+          Stage: !Ref ApiStageName
+        - ApiId: !Ref PortalAuthAPI
+          Stage: !Ref ApiStageName
+      Description: DTC-products API getway authentication usage plan
+      # Quota:
+      #   Limit: 5000
+      #   Period: MONTH
+      # Throttle:
+      #   BurstLimit: 200
+      #   RateLimit: 100
+      UsagePlanName: dtc-products-api-key
+  # This is to defined API-key with it's usage plan
+  UsagePlanKey:
+    Type: 'AWS::ApiGateway::UsagePlanKey'
+    DependsOn:
+      - ApiKey
+      - UsagePlan
+    Properties:
+      KeyId: !Ref ApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlan
+  # This is a Lambda function config associated with the source code: get-products-by-brand-id.js
+  getProductsByBrandIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-products-by-brand-id.getProductsByBrandIdHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get one item by id from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Products
+        - DynamoDBCrudPolicy:
+            TableName: Size_variants
+        - DynamoDBCrudPolicy:
+            TableName: Saved_products
+        - SSMParameterReadPolicy:
+            ParameterName: es_config
+        - SSMParameterReadPolicy:
+            ParameterName: buket_url
+        - DynamoDBCrudPolicy:
+            TableName: Brands
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          PRODUCTS_TABLE: Products
+          SIZE_VARIANTS_TABLE: Size_variants
+          SAVED_PRODUCTS_TABLE: Saved_products
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /product/brand
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+    
+  # This is a Lambda function config associated with the source code: check-product-availability.js
+  checkProductAvailabilityFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/check-product-availability.ProductAvailabilityHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get all items from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Products_addresses
+        - DynamoDBCrudPolicy:
+            TableName: Products
+        - DynamoDBCrudPolicy:
+            TableName: Size_variants
+        - DynamoDBCrudPolicy:
+            TableName: Retailers
+        - DynamoDBCrudPolicy:
+            TableName: Retailers_addresses
+        - DynamoDBCrudPolicy:
+            TableName: Inventory
+        - SSMParameterReadPolicy:
+            ParameterName: es_config
+        - DynamoDBCrudPolicy:
+            TableName: Brands
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_centers
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          PRODUCTS_TABLE: Products_addresses
+          SIZE_VARIANTS_TABLE: Size_variants
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /product/check-availability
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+  
+  # This is a Lambda function config associated with the source code: get-product-list.js
+  getProductListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-product-list.getProductListHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get all items from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Products
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          PRODUCTS_TABLE: Products
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /product/list
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+
+  # This is a Lambda function config associated with the source code: get-product-detail.js
+  getProductDetailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-product-detail.getProductsDetailHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get product detail by product id
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Products
+        - DynamoDBCrudPolicy:
+            TableName: Size_variants
+        - DynamoDBCrudPolicy:
+            TableName: Saved_products
+        - DynamoDBCrudPolicy:
+            TableName: Brands
+        - SSMParameterReadPolicy:
+            ParameterName: es_config
+        - SSMParameterReadPolicy:
+            ParameterName: buket_url
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          PRODUCTS_TABLE: Products
+          SIZE_VARIANTS_TABLE: Size_variants
+          SAVED_PRODUCTS_TABLE: Saved_products
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /product/detail
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: get-product-filters.js
+  getProductFiltersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-product-filters.getProductFiltersHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get all items from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Alcohol_type
+        - DynamoDBCrudPolicy:
+            TableName: Products
+        - DynamoDBCrudPolicy:
+            TableName: Size_variants
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          ALCOHOL_TYPE_TABLE: Alcohol_type
+          PRODUCTS_TABLE: Products
+          SIZE_VARIANTS_TABLE: Size_variants
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /product/filters/{brandid}
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+            RequestParameters:
+              - method.request.path.brandid
+    
+    # This is a Lambda function config associated with the source code: get-cms-products-by-brand-id.js
+  getCmsProductsByBrandIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-cms-products-by-brand-id.getCmsProductsByBrandIdHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get one item by id from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Products
+        - DynamoDBCrudPolicy:
+            TableName: Products_addresses
+        - DynamoDBCrudPolicy:
+            TableName: Size_variants
+        - SSMParameterReadPolicy:
+            ParameterName: buket_url
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          PRODUCTS_TABLE: Products
+          PRODUCTS_ADDRESSES_TABLE: Products_addresses
+          SIZE_VARIANTS_TABLE: Size_variants
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /cms/product/brand
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: get-cms-product-detail.js
+  getCmsProductDetailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-cms-product-detail.getCmsProductsDetailHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get product detail by product id
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Products
+        - DynamoDBCrudPolicy:
+            TableName: Products_addresses
+        - DynamoDBCrudPolicy:
+            TableName: Alcohol_type
+        - SSMParameterReadPolicy:
+            ParameterName: buket_url
+        - DynamoDBCrudPolicy:
+            TableName: Brands
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          PRODUCTS_TABLE: Products
+          PRODUCTS_ADDRESSES_TABLE: Products_addresses
+          ALCOHOL_TYPE_TABLE: Alcohol_type
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /cms/product/detail/{brand_id}/{product_id}
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+            RequestParameters:
+              - method.request.path.brand_id
+              - method.request.path.product_id
+
+  # This is a Lambda function config associated with the source code: get-alcohol-type.js
+  getAlcoholTypeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-alcohol-type.getAlcoholTypeHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get Alcohol Type
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: Alcohol_type
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          ALCOHOL_TYPE_TABLE: Alcohol_type
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /alcohol-type
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: remove-brand-products.js
+  removeBrandProductsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/remove-brand-products.RemoveBrandProductsHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get one item by id from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Products
+        - DynamoDBCrudPolicy:
+            TableName: Products_addresses
+        - DynamoDBCrudPolicy:
+            TableName: Size_variants
+        - DynamoDBCrudPolicy:
+            TableName: Inventory
+        - DynamoDBCrudPolicy:
+            TableName: Cart
+        - DynamoDBCrudPolicy:
+            TableName: Saved_products
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          PRODUCTS_TABLE: Products
+          PRODUCTS_ADDRESSES_TABLE: Products_addresses
+          SIZE_VARIANTS_TABLE: Size_variants
+          INVENTORY_TABLE: Inventory
+          CART_TABLE: Cart
+          SAVED_PRODUCTS_TABLE: Saved_products
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /cms/product/remove
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: add-variant.js
+  addVariantFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/add-variant.addVariantHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get one item by id from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Products
+        - DynamoDBCrudPolicy:
+            TableName: Size_variants
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_inventory
+        - DynamoDBCrudPolicy:
+            TableName: Brands
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          PRODUCTS_TABLE: Products
+          SIZE_VARIANTS_TABLE: Size_variants
+          DTC_UPDATE_FULFILLENT_INVENTORY_URL: !If [CreateProdResources, https://ar34oqufle.execute-api.us-east-1.amazonaws.com/prod, !If [CreateDevResources, https://1sfalsxr2a.execute-api.us-east-1.amazonaws.com/stg, https://1sfalsxr2a.execute-api.us-east-1.amazonaws.com/stg]]
+          DTC_UPDATE_FULFILLENT_INVENTORY_APIKEY: !If [CreateProdResources, iIR4WMDbmiaYcicXeaVnS3R16r94muR45Qt1uM0X, !If [CreateDevResources, N6UhtIZg1w3Rt7ukcXmu56rEe6VKKpfy5nhDAM8B, N6UhtIZg1w3Rt7ukcXmu56rEe6VKKpfy5nhDAM8B]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /cms/variant/add
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: get-variant-by-product-id.js
+  getVariantByProductIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-variant-by-product-id.getVariantByProductIdHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get one item by id from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Products
+        - DynamoDBCrudPolicy:
+            TableName: Size_variants
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          PRODUCTS_TABLE: Products
+          SIZE_VARIANTS_TABLE: Size_variants
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /cms/variants
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+
+  # This is a Lambda function config associated with the source code: create-brand-products.js
+  createBrandProductsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/create-brand-products.CreateBrandProductsHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Create brands products in CMS.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Products
+        - DynamoDBCrudPolicy:
+            TableName: Size_variants
+        - DynamoDBCrudPolicy:
+            TableName: Products_addresses
+        - DynamoDBCrudPolicy:
+            TableName: Inventory
+        - DynamoDBCrudPolicy:
+            TableName: Cart
+        - DynamoDBCrudPolicy:
+            TableName: Saved_products
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_inventory
+        - DynamoDBCrudPolicy:
+            TableName: Brands
+        - S3CrudPolicy:
+            BucketName: !If [CreateProdResources, dtc-prod-public, !If [CreateDevResources, dtc-stg-public, dtc-stg-public]]
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          PRODUCTS_TABLE: Products
+          SIZE_VARIANTS_TABLE: Size_variants
+          PRODUCTS_ADDRESSES_TABLE: Products_addresses
+          INVENTORY_TABLE: Inventory
+          CART_TABLE: Cart
+          SAVED_PRODUCTS_TABLE: Saved_products
+          BucketName: !If [CreateProdResources, dtc-prod-public, !If [CreateDevResources, dtc-stg-public, dtc-stg-public]]
+          DTC_UPDATE_FULFILLENT_INVENTORY_URL: !If [CreateProdResources, https://ar34oqufle.execute-api.us-east-1.amazonaws.com/prod, !If [CreateDevResources, https://1sfalsxr2a.execute-api.us-east-1.amazonaws.com/stg, https://1sfalsxr2a.execute-api.us-east-1.amazonaws.com/stg]]
+          DTC_UPDATE_FULFILLENT_INVENTORY_APIKEY: !If [CreateProdResources, iIR4WMDbmiaYcicXeaVnS3R16r94muR45Qt1uM0X, !If [CreateDevResources, N6UhtIZg1w3Rt7ukcXmu56rEe6VKKpfy5nhDAM8B, N6UhtIZg1w3Rt7ukcXmu56rEe6VKKpfy5nhDAM8B]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /cms/product/create
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: get-alcohol-type-by-brand.js
+  alcoholTypesByBrandFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-alcohol-type-by-brand.alcoholTypesByBrandHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Create brands products in CMS.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Products        
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          PRODUCTS_TABLE: Products          
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /cms/product/types/{brand_id}
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+            RequestParameters:
+              - method.request.path.brand_id
+
+  # This is a Lambda function config associated with the source code: get-retailers-by-product.js
+  getRetailersByProductFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-retailers-by-product.getRetailersByProductHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get retailer list based on the selection of product, size and quantity.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Retailers
+        - DynamoDBCrudPolicy:
+            TableName: Brands
+        - DynamoDBCrudPolicy:
+            TableName: Retailers_addresses
+        - SSMParameterReadPolicy:
+            ParameterName: es_config
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          BRAND_TABLE: Brands
+          RETAILERS_TABLE: Retailers
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /product/retailers
+            Method: POST
+            Auth:
+              ApiKeyRequired: true            
+Outputs:
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for staging stage"
+    Value: !Sub "https://77d880bvf0.execute-api.us-east-1.amazonaws.com/stg/"

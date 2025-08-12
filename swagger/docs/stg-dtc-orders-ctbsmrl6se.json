@@ -1,0 +1,583 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "version" : "1.0",
+    "title" : "dtc-orders"
+  },
+  "host" : "ctbsmrl6se.execute-api.us-east-1.amazonaws.com",
+  "basePath" : "/stg",
+  "schemes" : [ "https" ],
+  "paths" : {
+    "/cms/orders" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Get Order listing",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/getOrderListing"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cms/orders/cards/{brand_id}" : {
+      "get" : {
+        "parameters" : [
+        {
+          "name" : "brand_id",
+          "in" : "path",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cms/orders/detail/{order_id}" : {
+      "get" : {
+        "parameters" : [
+        {
+          "name" : "order_id",
+          "in" : "path",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cms/orders/retailer-cards/{retailer_id}" : {
+      "get" : {
+        "parameters" : [
+        {
+          "name" : "retailer_id",
+          "in" : "path",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cms/orders/update-status" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Update Order Status",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/updateOrderStatus"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cms/retailer/transaction-history" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Get retailer transaction history",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/retailerTransactionHistory"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cms/dashboard/cards" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Get dashboard summary card",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/dashboardSummaryCard"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cms/dashboard/orders" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Get dashboard orders",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/dashboardOrders"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cms/dashboard/top-selling-products" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Get top selling products",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/dashboardOrders"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cms/dashboard/cart-overview" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Get cart overview",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/dashboardSummaryCard"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions" : {
+    "api_key" : {
+      "type" : "apiKey",
+      "name" : "x-api-key",
+      "in" : "header"
+    },
+    "MyLambdaTokenAuthorizer" : {
+      "type" : "apiKey",
+      "name" : "Authorization",
+      "in" : "header",
+      "x-amazon-apigateway-authtype" : "custom"
+    }
+  },
+  "definitions": {
+    "getOrderListing": {
+      "type": "object",
+      "required": [
+      ],
+      "properties": {
+        "retailer_id": {
+          "type": "string",
+          "example": "07f751ba-e845-4489-8ca3-823e4c9852e5",
+          "note": "Pass if user_type is retailer"
+        },
+        "brand_id": {
+          "type": "string",
+          "example": "9b9af5d1-d518-4441-9c98-9a477241ab91",
+          "note": "Pass if user_type is brand"
+        },
+        "universal_search": {
+          "type": "string",
+          "example": "1234"
+        },
+        "limit": {
+          "type": "integer",
+          "example": 10
+        },
+        "order": {
+          "type": "string",
+          "example": "asc"
+        },
+        "sort": {
+          "type": "string",
+          "example": "sort_total"
+        },
+        "user_type": {
+          "type": "string",
+          "example": "retailer",
+          "note": "brand/retailer"
+        },
+        "status": {
+          "type": "string",
+          "example": ""
+        },
+        "lastKey": {
+          "type": "string",
+          "example": ""
+        }
+      }
+    },
+    "updateOrderStatus": {
+      "type": "object",
+      "required": [
+        "order_id",
+        "retailer_id",
+        "order_status"
+      ],
+      "properties": {
+        "order_id": {
+          "type": "string",
+          "example": "112094-68F0C"
+        },
+        "retailer_id": {
+          "type": "string",
+          "example": "07f751ba-e845-4489-8ca3-823e4c9852e5"
+        },
+        "order_status": {
+          "type": "string",
+          "example": "Confirmed"
+        }
+      }
+    },
+    "retailerTransactionHistory": {
+      "type": "object",
+      "required": [
+        "retailer_id"
+      ],
+      "properties": {
+        "retailer_id": {
+          "type": "string",
+          "example": "07f751ba-e845-4489-8ca3-823e4c9852e5"
+        },
+        "limit": {
+          "type": "integer",
+          "example": 9
+        },
+        "lastKey": {
+          "type": "string",
+          "example": ""
+        }
+      }
+    },
+    "dashboardSummaryCard": {
+      "type": "object",
+      "required": [
+        "brand_id",
+        "domain",
+        "from_date",
+        "to_date"
+      ],
+      "properties": {
+        "brand_id": {
+          "type": "string",
+          "example": "07f751ba-e845-4489-8ca3-823e4c9852e5"
+        },
+        "domain": {
+          "type": "string",
+          "example": "stgdtc.parkstreet.com"
+        },
+        "from_date": {
+          "type": "string",
+          "example": "01/01/2021"
+        },
+        "to_date": {
+          "type": "string",
+          "example": "08/24/2021"
+        }
+      }
+    },
+    "dashboardOrders": {
+      "type": "object",
+      "required": [
+        "brand_id",
+        "from_date",
+        "to_date"
+      ],
+      "properties": {
+        "brand_id": {
+          "type": "string",
+          "example": "07f751ba-e845-4489-8ca3-823e4c9852e5"
+        },
+        "from_date": {
+          "type": "string",
+          "example": "01/01/2021"
+        },
+        "to_date": {
+          "type": "string",
+          "example": "08/24/2021"
+        }
+      }
+    }
+  }
+}

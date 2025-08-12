@@ -1,0 +1,25 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "version" : "1.0",
+    "title" : "swagger-integration"
+  },
+  "host" : "3lyywvmbsf.execute-api.us-east-1.amazonaws.com",
+  "basePath" : "/Stage",
+  "schemes" : [ "https" ],
+  "paths" : {
+    "/" : {
+      "get" : {
+        "responses" : { }
+      },
+      "post" : {
+        "responses" : { }
+      }
+    },
+    "/{id}" : {
+      "get" : {
+        "responses" : { }
+      }
+    }
+  }
+}

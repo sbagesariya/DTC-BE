@@ -1,0 +1,197 @@
+# The AWSTemplateFormatVersion identifies the capabilities of the template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  dtc-shipping-rate
+
+Globals:
+  Function:
+    Timeout: 3
+  Api:
+    Cors:
+      AllowMethods: "'GET,HEAD,OPTIONS,POST,PUT,DELETE'"
+      AllowHeaders: "'Authorization, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, X-Api-Key'"
+      AllowOrigin: "'*'"
+      AllowCredentials: "'*'"
+
+Parameters:
+  ApiStageName:
+    Type: String
+    Default: stg
+
+Conditions:
+  CreateProdResources: !Equals [!Ref ApiStageName, prod]
+  CreateDevResources: !Equals [!Ref ApiStageName, "stg"]
+
+# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
+Transform:
+- AWS::Serverless-2016-10-31
+
+# Resources declares the AWS resources that you want to include in the stack
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+Resources:
+  PortalAuthAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref ApiStageName
+      GatewayResponses:
+        DEFAULT_4xx:
+          ResponseParameters:
+            Headers:
+              Access-Control-Expose-Headers: "'WWW-Authenticate'"
+              Access-Control-Allow-Origin: "'*'"
+      OpenApiVersion: 3.0.1
+      Auth:
+        AddDefaultAuthorizerToCorsPreflight: false
+        DefaultAuthorizer: MyLambdaTokenAuthorizer
+        Authorizers:
+          MyLambdaTokenAuthorizer:
+            FunctionArn: !GetAtt PortalAuthFunction.Arn
+  PortalAuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: authorizer/handler.AuthorizerHandler
+      Runtime: nodejs12.x
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - SSMParameterReadPolicy:
+            ParameterName: JWT_SECRET
+
+  APIKeyAuth:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref ApiStageName
+      OpenApiVersion: 3.0.1
+
+  # This is to defined API-KEY for different stages
+  ApiKey:
+    Type: 'AWS::ApiGateway::ApiKey'
+    DependsOn:
+      - APIKeyAuthStage
+      - PortalAuthAPIStage
+    Properties:
+      Description: DTC-shipping-rate API getway authentication api key
+      Enabled: 'true'
+      StageKeys:
+        - RestApiId: !Ref APIKeyAuth
+          StageName: !Ref ApiStageName
+        - RestApiId: !Ref PortalAuthAPI
+          StageName: !Ref ApiStageName
+  # This is to define usage plan for APIs
+  UsagePlan:
+    Type: 'AWS::ApiGateway::UsagePlan'
+    DependsOn:
+      - APIKeyAuth
+      - APIKeyAuthStage
+      - PortalAuthAPI
+      - PortalAuthAPIStage
+    Properties:
+      ApiStages:
+        - ApiId: !Ref APIKeyAuth
+          Stage: !Ref ApiStageName
+        - ApiId: !Ref PortalAuthAPI
+          Stage: !Ref ApiStageName
+      Description: DTC-shipping-rate API getway authentication usage plan
+      UsagePlanName: dtc-shipping-rate-api-key
+  # This is to defined API-key with it's usage plan
+  UsagePlanKey:
+    Type: 'AWS::ApiGateway::UsagePlanKey'
+    DependsOn:
+      - ApiKey
+      - UsagePlan
+    Properties:
+      KeyId: !Ref ApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlan
+
+  # This is a Lambda function config associated with the source code: add-shipping-rate.js
+  addShippingRateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/add-shipping-rate.AddShippingRateHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Add shipping rate API
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Retailers
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /cms/shipping-rate
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: get-shipping-rate-details.js
+  shippingRateDetailsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/shipping-rate-details.ShippingRateDetailsHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get Shipping Rate Details
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: Retailers
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          RETAILERS_TABLE: Retailers
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /cms/shipping-rate/{retailer_id}
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+            RequestParameters:
+              - method.request.path.retailer_id
+
+  # This is a Lambda function config associated with the source code: get-shipping-rate-details.js
+  getShippingRateDetailsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-shipping-rate-details.getShippingRateDetailsHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get Shipping Rate Details
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: Retailers
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_centers
+        - DynamoDBCrudPolicy:
+            TableName: ship_compliant_order_log
+        - SSMParameterReadPolicy:
+            ParameterName: sovoscred
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          RETAILERS_TABLE: Retailers
+          SHIP_COMPLAINCE_API_URL: !If [CreateProdResources, https://restapi-staging.shipcompliant.com, !If [CreateDevResources, https://restapi-staging.shipcompliant.com, https://restapi-staging.shipcompliant.com]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /cms/get-shipping-rate/
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+Outputs:
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for staging stage"
+    Value: !Sub "https://77d880bvf0.execute-api.us-east-1.amazonaws.com/stg/"

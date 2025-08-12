@@ -1,0 +1,8 @@
+{
+    "httpMethod": "POST",
+    "body": {
+        "product_id":"4f2e9bba-a741-42fb-85c9-0f56c4c85d57",
+        "size": "50 ml",
+        "upc": "122334444"
+    }
+}

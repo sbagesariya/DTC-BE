@@ -1,0 +1,80 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "version" : "1.0",
+    "title" : "dtc-promo-code"
+  },
+  "host" : "61x087t1t7.execute-api.us-east-1.amazonaws.com",
+  "basePath" : "/stg",
+  "schemes" : [ "https" ],
+  "paths" : {
+    "/promo-code/verify" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Brand User Update Profile",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/verifyPromoCode"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions" : {
+    "api_key" : {
+      "type" : "apiKey",
+      "name" : "x-api-key",
+      "in" : "header"
+    }
+  },
+  "definitions": {
+    "verifyPromoCode": {
+      "type": "object",
+      "required": [
+        "promo_code",
+        "sub_total"
+      ],
+      "properties": {
+        "promo_code": {
+          "type": "string",
+          "example": "FREESHIP"
+        },
+        "sub_total": {
+          "type": "string",
+          "example": "350"
+        }
+      }
+    }
+  }
+}

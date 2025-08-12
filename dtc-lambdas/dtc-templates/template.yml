@@ -1,0 +1,470 @@
+# This is the SAM template that represents the architecture of your serverless application
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
+
+# The AWSTemplateFormatVersion identifies the capabilities of the template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  dtc-templates
+
+Globals:
+  Function:
+    Timeout: 3
+  Api:
+    Cors:
+      AllowMethods: "'GET,HEAD,OPTIONS,POST,PUT,DELETE'"
+      AllowHeaders: "'Authorization, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, X-api-key'"
+      AllowOrigin: "'*'"
+      AllowCredentials: "'*'"
+
+Parameters:
+  ApiStageName:
+    Type: String
+    Default: stg
+    AllowedValues: [prod, stg]
+
+Conditions:
+  CreateProdResources: !Equals [!Ref ApiStageName, prod]
+  CreateDevResources: !Equals [!Ref ApiStageName, "stg"]
+
+# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
+Transform:
+- AWS::Serverless-2016-10-31
+
+# Resources declares the AWS resources that you want to include in the stack
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+Resources:
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  PortalAuthAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref ApiStageName
+      GatewayResponses:
+        DEFAULT_4xx:
+          ResponseParameters:
+            Headers:
+              Access-Control-Expose-Headers: "'WWW-Authenticate'"
+              Access-Control-Allow-Origin: "'*'"
+      OpenApiVersion: 3.0.1
+      Auth:
+        AddDefaultAuthorizerToCorsPreflight: false
+        DefaultAuthorizer: MyLambdaTokenAuthorizer
+        Authorizers:
+          MyLambdaTokenAuthorizer:
+            FunctionArn: !GetAtt PortalAuthFunction.Arn
+  PortalAuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: authorizer/handler.AuthorizerHandler
+      Runtime: nodejs12.x
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - SSMParameterReadPolicy:
+            ParameterName: JWT_SECRET
+  APIKeyAuth:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref ApiStageName
+      OpenApiVersion: 3.0.1      
+      
+   # This is to defined API-KEY for different stages
+  ApiKey:
+    Type: 'AWS::ApiGateway::ApiKey'
+    DependsOn:
+      - APIKeyAuthStage
+      - PortalAuthAPIStage
+    Properties:
+      Description: DTC-templates API getway authentication api key
+      Enabled: 'true'
+      StageKeys:
+        - RestApiId: !Ref APIKeyAuth
+          StageName: !Ref ApiStageName
+        - RestApiId: !Ref PortalAuthAPI
+          StageName: !Ref ApiStageName
+  # This is to define usage plan for APIs
+  UsagePlan:
+    Type: 'AWS::ApiGateway::UsagePlan'
+    DependsOn:
+      - APIKeyAuth
+      - APIKeyAuthStage
+      - PortalAuthAPI
+      - PortalAuthAPIStage
+    Properties:
+      ApiStages:
+        - ApiId: !Ref APIKeyAuth
+          Stage: !Ref ApiStageName
+        - ApiId: !Ref PortalAuthAPI
+          Stage: !Ref ApiStageName
+      Description: DTC-templates API getway authentication usage plan
+      # Quota:
+      #   Limit: 5000
+      #   Period: MONTH
+      # Throttle:
+      #   BurstLimit: 200
+      #   RateLimit: 100
+      UsagePlanName: dtc-templates-api-key
+  # This is to defined API-key with it's usage plan
+  UsagePlanKey:
+    Type: 'AWS::ApiGateway::UsagePlanKey'
+    DependsOn:
+      - ApiKey
+      - UsagePlan
+    Properties:
+      KeyId: !Ref ApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlan
+  # This is a Lambda function config associated with the source code: get-template-by-brand-id.js
+  getTemplateByBrandIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-template-by-brand-id.getTemplateByBrandIdHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get one item by id from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Templates
+        - DynamoDBCrudPolicy:
+            TableName: Products
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          TEMPLATES_TABLE: Templates
+          BucketURL: !If [CreateProdResources, https://dtc-prod-public.s3.amazonaws.com, !If [CreateDevResources, https://dtc-stg-public.s3.amazonaws.com, https://dtc-stg-public.s3.amazonaws.com]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /template/{brandid}
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+            RequestParameters:
+              - method.request.path.brandid              
+    
+  getTemplateByBrandIdTemplateIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-template-by-brand-id.getTemplateByBrandIdHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get one item by id from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Templates
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          TEMPLATES_TABLE: Templates
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /template/{brandid}/{template_id}
+            Method: GET
+            RequestParameters:
+              - method.request.path.brandid
+              - method.request.path.template_id
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+
+  # This is a Lambda function config associated with the source code: get-template-by-id.js
+  getTemplateByIdFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-template-by-id.getTemplateByIdHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get one item by id from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Templates
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          TEMPLATES_TABLE: Templates
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /banner/{templateid}
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+            RequestParameters:              
+              - method.request.path.templateid
+
+  # This is a Lambda function config associated with the source code: get-all-templates.js
+  getAllTemplatesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-all-templates.getAllTemplatesHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get one item by id from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Template_master
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          TEMPLATE_MASTER_TABLE: Template_master
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /template/list
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: Add selected template to template library
+  addSelectedTemplate:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/add-selected-template.AddSelectedTemplateHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get one item by id from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Template_master
+        - DynamoDBCrudPolicy:
+            TableName: Templates
+        - DynamoDBCrudPolicy:
+            TableName: Saved_templates
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          TEMPLATE_MASTER_TABLE: Template_master
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /template
+            Method: POST
+            Auth:
+              ApiKeyRequired: true             
+
+  # This is a Lambda function config associated with the source code: get-saved-template.js
+  getSavedTemplateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-saved-template.getSavedTemplateHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get one item by id from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Saved_templates
+        - DynamoDBCrudPolicy:
+            TableName: Products
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          SAVED_TEMPLATES_TABLE: Saved_templates
+          BucketURL: !If [CreateProdResources, https://dtc-prod-public.s3.amazonaws.com, !If [CreateDevResources, https://dtc-stg-public.s3.amazonaws.com, https://dtc-stg-public.s3.amazonaws.com]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /saved-template/{brand_id}/{template_id}
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+            RequestParameters:
+              - method.request.path.brand_id
+              - method.request.path.template_id
+
+  getBrandTemplateLibraryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-brand-template-library.getBrandTemplateLibraryHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get Brands Template Library By Brand Id.
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName: Templates
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /template-library/{brand_id}
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+            RequestParameters:
+              - method.request.path.brand_id
+  # Each Lambda function is defined by properties:
+  # This is a Lambda function config associated with the source code: Add selected template to template library
+  saveTemplateChanges:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/save-template-changes.SaveTemplateChangesHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get one item by id from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Saved_templates
+        - DynamoDBCrudPolicy:
+            TableName: Templates
+        - DynamoDBCrudPolicy:
+            TableName: Products
+        - DynamoDBCrudPolicy:
+            TableName: Saved_products
+        - DynamoDBCrudPolicy:
+            TableName: Brand_recipes
+        - S3CrudPolicy:
+            BucketName: !If [CreateProdResources, dtc-prod-public, !If [CreateDevResources, dtc-stg-public, dtc-stg-public]]
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          BucketName: !If [CreateProdResources, dtc-prod-public, !If [CreateDevResources, dtc-stg-public, dtc-stg-public]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /template/save
+            Method: PUT
+            Auth:
+              ApiKeyRequired: true
+    
+  # Each Lambda function is defined by properties:
+  # This is a Lambda function config associated with the source code: Remove selected template to template library
+  removeTemplateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/remove-template.removeTemplateHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get one item by id from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Saved_templates
+        - DynamoDBCrudPolicy:
+            TableName: Templates        
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          BucketName: !If [CreateProdResources, dtc-prod-public, !If [CreateDevResources, dtc-stg-public, dtc-stg-public]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /template/remove
+            Method: DELETE
+            Auth:
+              ApiKeyRequired: true
+            RequestParameters:
+              - method.request.path.brand_id
+              - method.request.path.template_id
+
+  # This is a Lambda function config associated with the source code: Add selected template to template library
+  publishTemplate:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/publish-template.PublishTemplateHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get one item by id from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Saved_templates
+        - DynamoDBCrudPolicy:
+            TableName: Templates
+        - DynamoDBCrudPolicy:
+            TableName: Saved_products
+        - DynamoDBCrudPolicy:
+            TableName: Products
+        - DynamoDBCrudPolicy:
+            TableName: Brand_recipes
+        - S3CrudPolicy:
+            BucketName: !If [CreateProdResources, dtc-prod-public, !If [CreateDevResources, dtc-stg-public, dtc-stg-public]]
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          BucketName: !If [CreateProdResources, dtc-prod-public, !If [CreateDevResources, dtc-stg-public, dtc-stg-public]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /template/publish
+            Method: PUT
+            Auth:
+              ApiKeyRequired: true
+
+
+  # This is a Lambda function config associated with the source code: get-template-by-domain.js
+  getTemplateByDomainFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-template-by-domain.getTemplateByDomaindHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP get method to get one item by id from a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Templates
+        - DynamoDBCrudPolicy:
+            TableName: Products
+        - DynamoDBCrudPolicy:
+            TableName: Brand_domains
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          TEMPLATES_TABLE: Templates
+          BucketURL: !If [CreateProdResources, https://dtc-prod-public.s3.amazonaws.com, !If [CreateDevResources, https://dtc-stg-public.s3.amazonaws.com, https://dtc-stg-public.s3.amazonaws.com]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /template/domain/{domain_name}
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+            RequestParameters:
+              - method.request.path.domain_name  
+
+# Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+
+Outputs:
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for staging stage"
+    Value: !Sub "https://77d880bvf0.execute-api.us-east-1.amazonaws.com/stg/"

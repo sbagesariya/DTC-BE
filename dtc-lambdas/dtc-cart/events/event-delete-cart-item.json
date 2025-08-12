@@ -1,0 +1,7 @@
+{
+    "httpMethod": "GET",
+    "pathParameters": {
+        "userid": "userid1",
+        "carttid": "carttid1"
+    }
+}

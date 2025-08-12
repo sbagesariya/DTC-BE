@@ -1,0 +1,114 @@
+
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      nodejs: 12
+    commands:
+      # Install packages or any pre-reqs in this phase.
+      # Upgrading SAM CLI to latest version
+      - pip3 install --upgrade aws-sam-cli
+      - sam --version
+      # Installing project dependencies
+      - 
+      - npm install # commented by me 
+  
+  pre_build:
+    commands:
+      # Run tests, lint scripts or any other pre-build checks.
+      #- npm run test # commented by me 
+
+  build:
+    commands:
+      # Use Build phase to build your artifacts (compile, etc.)
+      - ls -la 
+      # Deploying DTC-brands      
+      - cd dtc-lambdas/dtc-brands
+      - sam build
+      - sam package --s3-bucket artifacts-code-build-dtc-stg-psi --output-template-file template.yaml
+      - sam deploy --template-file template.yaml --stack-name dtc-brands  --capabilities CAPABILITY_IAM --parameter-overrides ApiStageName=stg
+      # Deploying DTC-Cart
+      - cd ../../dtc-lambdas/dtc-cart
+      - sam build
+      - sam package --s3-bucket artifacts-code-build-dtc-stg-psi --output-template-file template.yaml
+      - sam deploy --template-file template.yaml --stack-name dtc-cart  --capabilities CAPABILITY_IAM --parameter-overrides ApiStageName=stg
+      # Deploying DTC-products      
+      - cd ../../dtc-lambdas/dtc-products
+      - sam build
+      - sam package --s3-bucket artifacts-code-build-dtc-stg-psi --output-template-file template.yaml
+      - sam deploy --template-file template.yaml --stack-name dtc-products  --capabilities CAPABILITY_IAM --parameter-overrides ApiStageName=stg
+      # Deploying DTC-templates      
+      - cd ../../dtc-lambdas/dtc-templates
+      - sam build      
+      - sam package --s3-bucket artifacts-code-build-dtc-stg-psi --output-template-file template.yaml
+      - sam deploy --template-file template.yaml --stack-name dtc-templates  --capabilities CAPABILITY_IAM --parameter-overrides ApiStageName=stg
+      # Deploying dtc-promo-code      
+      - cd ../../dtc-lambdas/dtc-promo-code
+      - sam build
+      - sam package --s3-bucket artifacts-code-build-dtc-stg-psi --output-template-file template.yaml
+      - sam deploy --template-file template.yaml --stack-name dtc-promo-code --capabilities CAPABILITY_IAM --parameter-overrides ApiStageName=stg
+      # Deploying dtc-checkout
+      - cd ../../dtc-lambdas/dtc-checkout
+      - sam build
+      - sam package --s3-bucket artifacts-code-build-dtc-stg-psi --output-template-file template.yaml
+      - sam deploy --template-file template.yaml --stack-name dtc-checkout --capabilities CAPABILITY_IAM --parameter-overrides ApiStageName=stg
+      - cd ../../dtc-lambdas/dtc-stripe
+      - sam build
+      - sam package --s3-bucket artifacts-code-build-dtc-stg-psi --output-template-file template.yaml
+      - sam deploy --template-file template.yaml --stack-name dtc-stripe --capabilities CAPABILITY_IAM --parameter-overrides ApiStageName=stg
+      - cd ../../dtc-lambdas/dtc-account
+      - sam build
+      - sam package --s3-bucket artifacts-code-build-dtc-stg-psi --output-template-file template.yaml
+      - sam deploy --template-file template.yaml --stack-name dtc-account --capabilities CAPABILITY_IAM --parameter-overrides ApiStageName=stg
+      - cd ../../dtc-lambdas/dtc-content
+      - sam build
+      - sam package --s3-bucket artifacts-code-build-dtc-stg-psi --output-template-file template.yaml
+      - sam deploy --template-file template.yaml --stack-name dtc-content --capabilities CAPABILITY_IAM --parameter-overrides ApiStageName=stg
+      - cd ../../dtc-lambdas/dtc-generic-api
+      - sam build
+      - sam package --s3-bucket artifacts-code-build-dtc-stg-psi --output-template-file template.yaml
+      - sam deploy --template-file template.yaml --stack-name dtc-generic-api --capabilities CAPABILITY_IAM --parameter-overrides ApiStageName=stg
+      - cd ../../dtc-lambdas/dtc-orders
+      - sam build
+      - sam package --s3-bucket artifacts-code-build-dtc-stg-psi --output-template-file template.yaml
+      - sam deploy --template-file template.yaml --stack-name dtc-orders --capabilities CAPABILITY_IAM --parameter-overrides ApiStageName=stg
+      # Deploying DTC-product-inventory
+      - cd ../../dtc-lambdas/dtc-product-inventory
+      - sam build
+      - sam package --s3-bucket artifacts-code-build-dtc-stg-psi --output-template-file template.yaml
+      - sam deploy --template-file template.yaml --stack-name dtc-product-inventory  --capabilities CAPABILITY_IAM --parameter-overrides ApiStageName=stg
+      # Deploying DTC-Shipping-Rate
+      - cd ../../dtc-lambdas/dtc-shipping-rate
+      - sam build
+      - sam package --s3-bucket artifacts-code-build-dtc-stg-psi --output-template-file template.yaml
+      - sam deploy --template-file template.yaml --stack-name dtc-shipping-rate  --capabilities CAPABILITY_IAM --parameter-overrides ApiStageName=stg
+      # Deploying DTC-brand-domains
+      - cd ../../dtc-lambdas/dtc-brand-domains
+      - sam build
+      - sam package --s3-bucket artifacts-code-build-dtc-stg-psi --output-template-file template.yaml
+      - sam deploy --template-file template.yaml --stack-name dtc-brand-domains  --capabilities CAPABILITY_IAM --parameter-overrides ApiStageName=stg
+      # Deploying DTC-fulfillment
+      - cd ../../dtc-lambdas/dtc-fulfillment
+      - sam build
+      - sam package --s3-bucket artifacts-code-build-dtc-stg-psi --output-template-file template.yaml
+      - sam deploy --template-file template.yaml --stack-name dtc-fulfillment  --capabilities CAPABILITY_IAM --parameter-overrides ApiStageName=stg
+      # Deploying TP-apis
+      - cd ../../dtc-lambdas/TP-apis
+      - sam build
+      - sam package --s3-bucket artifacts-code-build-dtc-stg-psi --output-template-file template.yaml
+      - sam deploy --template-file template.yaml --stack-name TP-apis  --capabilities CAPABILITY_IAM --parameter-overrides ApiStageName=stg
+      # Deploying DTC-crons
+      - cd ../../dtc-lambdas/dtc-crons
+      - sam build
+      - sam package --s3-bucket artifacts-code-build-dtc-stg-psi --output-template-file template.yaml
+      - sam deploy --template-file template.yaml --stack-name dtc-crons  --capabilities CAPABILITY_IAM --parameter-overrides ApiStageName=stg
+      # Deploying to Swager
+      - cd ../../swagger
+      - aws s3 sync . s3://dtc-stg-swagger/
+      # Deploying TP Swager API
+      - cd ../tp-swagger
+      - aws s3 sync . s3://dtc-tp-api-swagger/
+      
+      #
+
+

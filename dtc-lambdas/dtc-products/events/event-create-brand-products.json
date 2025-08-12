@@ -1,0 +1,33 @@
+{
+    "httpMethod": "POST",
+    "body": {
+        "product_id" : "fd81b880",
+        "brand_id":"1234567890",
+        "product_name": "Test Product",
+        "description": "Product Desc",
+        "alcohol_type": "Spirit",
+        "ABV": "40%",
+        "product_images": {
+            "img_1": "first.jpg",
+            "img_2": "second.jpg",
+            "img_3": "third.jpg",
+            "img_4": "fourth.jpg"
+        },        
+        "product_size_variants": [
+            {
+                "product_id": "9345934975935735",                
+                "upc_code": 2345,
+                "variant_size": 50,
+                "variant_type": "ml"
+            },
+            {
+                "product_id": "9345934975935735",                
+                "upc_code": 1234,
+                "variant_size": 10,
+                "variant_type": "ml"
+            }
+        ],
+        "variants_count": 2,
+        "removed_images": ["first.jpg", "third.jpg"]
+    }
+}

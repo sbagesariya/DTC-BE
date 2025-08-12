@@ -1,0 +1,502 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "version" : "1.0",
+    "title" : "dtc-product-inventory"
+  },
+  "host" : "jr6ty1bjn8.execute-api.us-east-1.amazonaws.com",
+  "basePath" : "/stg",
+  "schemes" : [ "https" ],
+  "paths" : {
+    "/cms/brands" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Get all brands",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/getAllBrands"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/product-inventory/add" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Add product inventory",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/addProductInventory"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/product-inventory/cards/{retailer_id}" : {
+      "get" : {
+        "parameters" : [
+          {
+            "name" : "retailer_id",
+            "in" : "path",
+            "required" : false,
+            "type" : "string"
+          } ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/product-inventory/detail" : {
+      "consumes": [
+        "application/json"
+      ],      
+      "post" : {
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Get product inventory details",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/getProductInventoryDetails"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "put" : {
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Update product inventory details",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/updateProductInventoryDetails"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/product-inventory/list" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Get product inventory list",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/productInventory"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/product-inventory/products" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Get product inventory products",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/productInventoryProducts"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/product-inventory/{retailerId}/{createdAt}" : {
+      "delete" : {
+        "parameters" : [
+          {
+            "name" : "retailerId",
+            "in" : "path",
+            "required" : false,
+            "type" : "string"
+          }, {
+            "name" : "createdAt",
+            "in" : "path",
+            "required" : false,
+            "type" : "string"
+          } 
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions" : {
+    "api_key" : {
+      "type" : "apiKey",
+      "name" : "x-api-key",
+      "in" : "header"
+    },
+    "MyLambdaTokenAuthorizer" : {
+      "type" : "apiKey",
+      "name" : "Authorization",
+      "in" : "header",
+      "x-amazon-apigateway-authtype" : "custom"
+    }
+  },
+  "definitions": {
+    "productInventory": {
+      "type": "object",
+      "required": [
+        "retailer_id"
+      ],
+      "properties": {
+        "retailer_id": {
+          "type": "string",
+          "example": "274ae582-f510-4885-a3b1-f1682acbf4c8"
+        },
+        "universal_search": {
+          "type": "string",
+          "example": ""
+        },
+        "order": {
+          "type": "string",
+          "example": "desc"
+        },
+        "sort": {
+          "type": "string",
+          "example": "retailer_product_id"
+        },
+        "limit": {
+          "type": "integer",
+          "example": 16
+        }
+      }
+    },
+    "getAllBrands": {
+      "type": "object",
+      "required": [
+      ],
+      "properties": {
+        "search_brand": {
+          "type": "string",
+          "example": "brand-81"
+        }
+      }
+    },
+    "productInventoryProducts": {
+      "type": "object",
+      "required": [
+        "retailer_id",
+        "brand_id"
+      ],
+      "properties": {
+        "retailer_id": {
+          "type": "string",
+          "example": "274ae582-f510-4885-a3b1-f1682acbf4c8"
+        },
+        "brand_id": {
+          "type": "string",
+          "example": "9b9af5d1-d518-4441-9c98-9a477241ab91"
+        },
+        "lastKey": {
+          "type": "string",
+          "example": ""
+        },
+        "limit": {
+          "type": "integer",
+          "example": 6
+        }
+      }
+    },
+    "addProductInventory": {
+      "type": "object",
+      "required": [
+        "retailer_id",
+        "brand_id",
+        "product_id"
+      ],
+      "properties": {
+        "retailer_id": {
+          "type": "string",
+          "example": "274ae582-f510-4885-a3b1-f1682acbf4c8"
+        },
+        "brand_id": {
+          "type": "string",
+          "example": "9b9af5d1-d518-4441-9c98-9a477241ab91"
+        },
+        "product_id": {
+          "type": "string",
+          "example": "379ed278-4df7-4fa5-b418-a7f6cbf58f5a"
+        },
+        "brand_name": {
+          "type": "string",
+          "example": "Brand-1"
+        },
+        "product_name": {
+          "type": "string",
+          "example": "Product-14"
+        },
+        "variant_size": {
+          "type": "string",
+          "example": "400 ml"
+        },
+        "upc_code": {
+          "type": "string",
+          "example": "1234567800"
+        },
+        "stock": {
+          "type": "integer",
+          "example": 50
+        },
+        "alcohol_type": {
+          "type": "string",
+          "example": "Wine"
+        },
+        "unit_price": {
+          "type": "integer",
+          "example": 50
+        }
+      }
+    },
+    "getProductInventoryDetails": {
+      "type": "object",
+      "required": [
+      ],
+      "properties": {
+        "retailer_id": {
+          "type": "string",
+          "example": "274ae582-f510-4885-a3b1-f1682acbf4c8"
+        },
+        "created_at": {
+          "type": "integer",
+          "example": 1607327648421
+        }
+      }
+    },
+    "updateProductInventoryDetails": {
+      "type": "object",
+      "required": [
+      ],
+      "properties": {
+        "retailer_id": {
+          "type": "string",
+          "example": "274ae582-f510-4885-a3b1-f1682acbf4c8"
+        },
+        "created_at": {
+          "type": "integer",
+          "example": 1607327648421
+        },
+        "product_id": {
+          "type": "string",
+          "example": "379ed278-4df7-4fa5-b418-a7f6cbf58f5a"
+        },
+        "stock": {
+          "type": "integer",
+          "example": 50
+        },
+        "unit_price": {
+          "type": "integer",
+          "example": 50
+        }
+      }
+    }
+  }
+}

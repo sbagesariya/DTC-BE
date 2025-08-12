@@ -1,0 +1,506 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "version" : "1.0",
+    "title" : "dtc-account"
+  },
+  "host" : "03f7lkk410.execute-api.us-east-1.amazonaws.com",
+  "basePath" : "/stg",
+  "schemes" : [ "https" ],
+  "paths" : {
+    "/brand/update-profile" : {
+      "put" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Brand User Update Profile",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/BrandUserUpdateProfile"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/brand/user-role" : {
+      "get" : {
+        "consumes": [
+          "application/json"
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "description": "This is an required parameter to execute the api.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "header",
+            "name": "x-api-key",
+            "description": "This is an required parameter to execute the api.",
+            "required": true,
+            "type": "string",
+            "example": "ahJjaevLPZ61aHZDYYeZP3GQ3DRxmKae2J5iViEn"
+          },
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Add new brand user with roles",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/AddBrandUserRoles"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "put" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Update users role",            
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UpdateUsersRole"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/brand/user-role/{user_id}" : {
+      "delete" : {
+        "parameters" : [
+        {
+          "name" : "user_id",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/retailer/save-shipping-limits" : {
+      "put" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Save retailer shipping limits",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SaveShippingLimits"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/retailer/update-profile" : {
+      "put" : {
+	      "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Retailer User Update Profile",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/RetailerUserUpdateProfile"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions" : {
+    "api_key" : {
+      "type" : "apiKey",
+      "name" : "x-api-key",
+      "in" : "header"
+    },
+    "MyLambdaTokenAuthorizer" : {
+      "type" : "apiKey",
+      "name" : "Authorization",
+      "in" : "header",
+      "x-amazon-apigateway-authtype" : "custom"
+    }
+  },
+  "definitions": {
+    "RetailerUserUpdateProfile": {
+      "type": "object",
+      "required": [
+        "email",
+        "first_name",
+        "last_name",
+        "phone",
+        "password",
+        "new_password",
+        "confirm_password",
+        "primary_address"
+      ],
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "new_password": {
+          "type": "string"
+        },
+        "confirm_password": {
+          "type": "string"
+        },
+        "first_name": {
+          "type": "string"
+        },
+        "last_name": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "primary_address": {
+          "type": "object",
+          "example": {
+            "address_line_1": "first",
+            "address_line_2": "second",
+            "city": "city-1",
+            "state": "Florida",
+            "country": "US",
+            "zip_code": "456456",
+            "lat": "12345",
+            "long": "-12333334"
+          }
+        },
+        "addresses": {
+          "type": "object",
+          "example": [
+            {
+              "address_line_1": "first",
+              "address_line_2": "second",
+              "city": "city-1",
+              "state": "Florida",
+              "country": "US",
+              "zip_code": "456456",
+              "lat": "12345",
+              "long": "-12333334"
+            },
+            {
+              "address_line_1": "third",
+              "address_line_2": "fourth",
+              "city": "city-2",
+              "state": "Florida",
+              "country": "US",
+              "zip_code": "12345",
+              "lat": "133432435435",
+              "long": "-143243242424"
+            }
+          ]
+        }
+      }
+    },
+    "BrandUserUpdateProfile": {
+      "type": "object",
+      "required": [
+        "email",
+        "first_name",
+        "password",
+        "new_password",
+        "confirm_password"
+      ],
+      "properties": {
+        "email": {
+          "type": "string",
+          "example": "aderrickh@mozilla.com"
+        },
+        "password": {
+          "type": "string",
+          "example": "test123"
+        },
+        "new_password": {
+          "type": "string",
+          "example": "test1234"
+        },
+        "confirm_password": {
+          "type": "string",
+          "example": "test1234"
+        },
+        "first_name": {
+          "type": "string",
+          "example": "Ader"
+        },
+        "last_name": {
+          "type": "string",
+          "example": "Rickh"
+        },
+        "profilePicture": {
+          "type": "string",
+          "example": "https://dtc-stg-public.s3.amazonaws.com/prefix-1616684789660.png"
+        },
+        "removeProfilePicture": {
+          "type": "string",
+          "example": ""
+        }
+      }
+    },
+    "UpdateUsersRole": {
+      "type": "object",
+      "required": [
+        "email",
+        "user_roles"
+      ],
+      "properties": {
+        "data": {
+          "type": "object",
+          "example": [
+            {
+              "email": "rnv619@parkstreet.com",
+              "user_roles": {
+                "administrator": false,
+                "information": true,
+                "developer": true,
+                "manager": true
+              }
+            },
+            {
+              "email": "jleteve7@typepad.com",
+              "user_roles": {
+                "administrator": false,
+                "information": true,
+                "developer": true,
+                "manager": true
+              }
+            }
+          ]
+        }
+      }
+    },
+    "AddBrandUserRoles": {
+      "type": "object",
+      "required": [
+        "first_name",
+        "email",
+        "user_roles",
+        "created_by"
+      ],
+      "properties": {
+        "email": {
+          "type": "string",
+          "example": "aderrickh@mozilla.com"
+        },
+        "first_name": {
+          "type": "string",
+          "example": "Ader"
+        },
+        "last_name": {
+          "type": "string",
+          "example": "Rickh"
+        },
+        "created_by": {
+          "type": "string",
+          "example": "ee6f545a-a477-4830-89c5-96d25db16752"
+        },
+        "user_roles": {
+          "type": "object",
+          "example": {
+            "administrator": false,
+            "information": true,
+            "developer": true,
+            "manager": true
+          }
+        }
+      }
+    },
+    "SaveShippingLimits": {
+      "type": "object",
+      "required": [
+        "email",
+        "shipping_limits"
+      ],
+      "properties": {
+        "email": {
+          "type": "string",
+          "example": "aderrickh_retailer@mozilla.com"
+        },
+        "shipping_limits": {
+          "type": "object",
+          "example": 
+          [
+            {
+                "zipcode": "",
+                "state": "Florida",
+                "lng": -80.1917902,
+                "lat": 25.7616798
+            },
+            {
+                "address_id":"",
+                "zipcode": "",
+                "state": "Calefonia",
+                "lng": -80.1917902,
+                "lat": 25.7616798
+            }
+          ]
+        }
+      }
+    }
+  }
+}

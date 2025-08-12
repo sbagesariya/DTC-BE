@@ -1,0 +1,8 @@
+{
+    "httpMethod": "GET",
+    "queryStringParameters": {
+        "zipcode": "zipcode1",
+        "brandid": "brandid",
+        "productid": "productid"
+    }
+}

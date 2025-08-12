@@ -1,0 +1,28 @@
+{
+    "name": "delete-test-01",
+    "description": "delete-test-01-description",
+    "version": "0.0.1",
+    "private": true,
+    "dependencies": {
+        "@elastic/elasticsearch": "~7.13.0",
+        "aws-sdk": "^2.437.0",
+        "dynamoose": "^2.4.1",
+        "geolib": "^3.3.1",
+        "jsonwebtoken": "^8.5.1",
+        "superagent": "^7.1.1",
+        "uuid": "^8.3.2"
+    },
+    "devDependencies": {
+        "jest": "^24.9.0"
+    },
+    "scripts": {
+        "test": "NODE_ENV=local jest --coverage",
+        "integ-test": "jest --roots __tests__/integration",
+        "start": "sam build && sam local start-api"
+    },
+    "jest": {
+        "testPathIgnorePatterns": [
+            ".aws-sam"
+        ]
+    }
+}

@@ -1,0 +1,7 @@
+{
+    "httpMethod": "POST",
+    "body": {
+        "brand_id":"test@gmail.com",
+        "product_ids": [1,2]
+    }
+}

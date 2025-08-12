@@ -1,0 +1,11 @@
+{
+    "httpMethod": "POST",
+    "body": {
+        "brand_id" : "8fe49d41-c91d-46c3-a4f8-86be6483c186",
+        "universal_search": "",
+        "limit":16,
+        "order": "asc",
+        "sort": "order_id",
+        "lastKey": ""
+    }
+}

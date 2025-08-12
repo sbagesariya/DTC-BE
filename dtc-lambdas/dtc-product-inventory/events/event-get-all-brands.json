@@ -1,0 +1,7 @@
+
+{
+    "httpMethod": "POST",
+    "body": {
+        "search_brand": "Brand-7"
+    }
+}

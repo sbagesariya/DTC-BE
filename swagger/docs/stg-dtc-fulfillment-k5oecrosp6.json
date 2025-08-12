@@ -1,0 +1,175 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "version" : "1.0",
+    "title" : "dtc-fulfillment"
+  },
+  "host" : "k5oecrosp6.execute-api.us-east-1.amazonaws.com",
+  "basePath" : "/stg",
+  "schemes" : [ "https" ],
+  "paths" : {
+    "/fulfill-product-market-req" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "API to add more products/markets request",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/marketsRequest"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/markets" : {
+      "get" : {
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/preference/{brand_id}" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "brand_id",
+          "in" : "path",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    }    
+  },
+  "securityDefinitions" : {
+    "api_key" : {
+      "type" : "apiKey",
+      "name" : "x-api-key",
+      "in" : "header"
+    },
+    "MyLambdaTokenAuthorizer" : {
+      "type" : "apiKey",
+      "name" : "Authorization",
+      "in" : "header",
+      "x-amazon-apigateway-authtype" : "custom"
+    }
+  },
+  "definitions": {
+    "marketsRequest": {
+      "type": "object",
+      "required": [
+        "user_email",
+        "user_name",
+        "total_products",
+        "total_markets",
+        "brand_name",
+        "req_type"
+      ],
+      "properties": {
+        "user_email": {
+          "type": "string",
+          "example": "dcleverley0@wunderground.com"
+        },
+        "user_name": {
+          "type": "string",
+          "example": "Derrick"
+        },
+        "total_products": {
+          "type": "integer",
+          "example": 10
+        },
+        "total_markets": {
+          "type": "integer",
+          "example": 5
+        },
+        "brand_name": {
+          "type": "string",
+          "example": "Brand-3"
+        },
+        "req_type": {
+          "type": "string",
+          "example": "Products",
+          "note": "For Market 'Markets' and for Product 'Products'"
+        }
+      }
+    }
+  }
+}

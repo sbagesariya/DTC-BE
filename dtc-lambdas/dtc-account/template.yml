@@ -1,0 +1,513 @@
+# This is the SAM template that represents the architecture of your serverless application
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
+
+# The AWSTemplateFormatVersion identifies the capabilities of the template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  dtc-account
+
+Globals:
+  Function:
+    Timeout: 3
+  Api:
+    Cors:
+      AllowMethods: "'GET,HEAD,OPTIONS,POST,PUT,DELETE'"
+      AllowHeaders: "'Authorization, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, X-Api-Key'"
+      AllowOrigin: "'*'"
+      AllowCredentials: "'*'"
+
+Parameters:
+  ApiStageName:
+    Type: String
+    Default: stg
+    AllowedValues: [prod, stg]
+
+Conditions:
+  CreateProdResources: !Equals [!Ref ApiStageName, prod]
+  CreateDevResources: !Equals [!Ref ApiStageName, "stg"]
+
+# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
+Transform:
+- AWS::Serverless-2016-10-31
+
+# Resources declares the AWS resources that you want to include in the stack
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+Resources:
+  # This is the Lambda authentication token function
+  PortalAuthAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref ApiStageName
+      GatewayResponses:
+        DEFAULT_4xx:
+          ResponseParameters:
+            Headers:
+              Access-Control-Expose-Headers: "'WWW-Authenticate'"
+              Access-Control-Allow-Origin: "'*'"
+      OpenApiVersion: 3.0.1
+      Auth:
+        AddDefaultAuthorizerToCorsPreflight: false
+        DefaultAuthorizer: MyLambdaTokenAuthorizer
+        Authorizers:
+          MyLambdaTokenAuthorizer:
+            FunctionArn: !GetAtt PortalAuthFunction.Arn
+  PortalAuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: authorizer/handler.AuthorizerHandler
+      Runtime: nodejs12.x
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - SSMParameterReadPolicy:
+            ParameterName: JWT_SECRET
+  APIKeyAuth:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref ApiStageName
+      OpenApiVersion: 3.0.1      
+      
+  # This is to defined API-KEY for different stages
+  ApiKey:
+    Type: 'AWS::ApiGateway::ApiKey'
+    DependsOn:
+      - APIKeyAuthStage
+      - PortalAuthAPIStage
+    Properties:
+      Description: DTC-account API getway authentication api key
+      Enabled: true
+      StageKeys:
+        - RestApiId: !Ref APIKeyAuth
+          StageName: !Ref ApiStageName
+        - RestApiId: !Ref PortalAuthAPI
+          StageName: !Ref ApiStageName
+  # This is to define usage plan for APIs
+  UsagePlan:
+    Type: 'AWS::ApiGateway::UsagePlan'
+    DependsOn:
+      - APIKeyAuth
+      - APIKeyAuthStage
+      - PortalAuthAPI
+      - PortalAuthAPIStage
+    Properties:
+      ApiStages:
+        - ApiId: !Ref APIKeyAuth
+          Stage: !Ref ApiStageName
+        - ApiId: !Ref PortalAuthAPI
+          Stage: !Ref ApiStageName
+      Description: DTC-account API getway authentication usage plan
+      # Quota:
+      #   Limit: 5000
+      #   Period: MONTH
+      # Throttle:
+      #   BurstLimit: 200
+      #   RateLimit: 100
+      UsagePlanName: dtc-account-api-key
+  # This is to defined API-key with it's usage plan
+  UsagePlanKey:
+    Type: 'AWS::ApiGateway::UsagePlanKey'
+    DependsOn:
+      - ApiKey
+      - UsagePlan
+    Properties:
+      KeyId: !Ref ApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlan
+
+  # This is a Lambda function config associated with the source code: user-signIn.js
+  PortalUserSignInFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/portal-user-signIn.PortalUserSignInHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+        - DynamoDBCrudPolicy:
+            TableName: Brands
+        - DynamoDBCrudPolicy:
+            TableName: Retailers
+        - DynamoDBCrudPolicy:
+            TableName: Retailers_addresses
+        - SSMParameterReadPolicy:
+            ParameterName: JWT_SECRET
+        - KMSEncryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]
+        - KMSDecryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          JWT_SECRET: parkstreet007dtc
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /portal-user/signin
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # PortalAuthFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Handler: authorizer/handler.AuthorizerHandler
+  #     Runtime: nodejs12.x
+  #     Policies:
+  #       # Give Create/Read/Update/Delete Permissions to the SampleTable
+  #       - SSMParameterReadPolicy:
+  #           ParameterName: JWT_SECRET
+
+  # This is a Lambda function config associated with the source code: user-signIn.js
+  PortalUserForgotPasswordFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/portal-user-forgot-password.PortalUserForgotPasswordHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+        - SSMParameterReadPolicy:
+            ParameterName: JWT_SECRET
+        - SSMParameterReadPolicy:
+            ParameterName: login_kms
+        - SESEmailTemplateCrudPolicy: {}
+        - SESBulkTemplatedCrudPolicy:
+            IdentityName: parkstreet.com
+        - KMSEncryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]
+        - KMSDecryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution          
+          JWT_SECRET: parkstreet007dtc
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /portal-user/forgot-password
+            Method: PUT
+            Auth:
+              ApiKeyRequired: true
+
+  # # This is a Lambda function config associated with the source code: user-signIn.js
+  PortalUserUpdatePasswordFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/portal-user-update-password.PortalUserUpdatePasswordHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+        - SSMParameterReadPolicy:
+            ParameterName: JWT_SECRET
+        - SSMParameterReadPolicy:
+            ParameterName: login_kms
+        - KMSEncryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]
+        - KMSDecryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]    
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution          
+          JWT_SECRET: parkstreet007dtc
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /portal-user/update-password
+            Method: PUT
+            Auth:
+              ApiKeyRequired: true
+
+  # # This is a Lambda function config associated with the source code: retailer-user-update-profile.js
+  RetailerUserUpdateProfileFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/retailer-user-update-profile.RetailerUserUpdateProfileHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+        - DynamoDBCrudPolicy:
+            TableName: Retailers
+        - DynamoDBCrudPolicy:
+            TableName: Retailers_addresses
+        - SSMParameterReadPolicy:
+            ParameterName: JWT_SECRET
+        - SSMParameterReadPolicy:
+            ParameterName: login_kms
+        - KMSEncryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]
+        - KMSDecryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]    
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution          
+          JWT_SECRET: parkstreet007dtc
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /retailer/update-profile
+            Method: PUT
+            Auth:
+              ApiKeyRequired: true
+
+  # # This is a Lambda function config associated with the source code: save-retailer-shipping-limits.js
+  SaveRetailerShippingLimitsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/save-retailer-shipping-limits.SaveRetailerShippingLimitsHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+        - DynamoDBCrudPolicy:
+            TableName: Retailers_addresses
+        - SSMParameterReadPolicy:
+            ParameterName: JWT_SECRET      
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /retailer/save-shipping-limits
+            Method: PUT
+            Auth:
+              ApiKeyRequired: true
+  
+  # This is a Lambda function config associated with the source code: brand-user-update-profile.js
+  BrandUserUpdateProfileFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/brand-user-update-profile.BrandUserUpdateProfileHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+        - SSMParameterReadPolicy:
+            ParameterName: JWT_SECRET
+        - SSMParameterReadPolicy:
+            ParameterName: login_kms
+        - KMSEncryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]
+        - KMSDecryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]
+        - S3CrudPolicy:
+            BucketName: !If [CreateProdResources, dtc-prod-public, !If [CreateDevResources, dtc-stg-public, dtc-stg-public]]
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          JWT_SECRET: parkstreet007dtc
+          BucketName: !If [CreateProdResources, dtc-prod-public, !If [CreateDevResources, dtc-stg-public, dtc-stg-public]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /brand/update-profile
+            Method: PUT
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: create-brand-user-with-roles.js
+  CreateBrandUserWithRolesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/create-brand-user-with-roles.CreateBrandUserWithRolesHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+        - DynamoDBCrudPolicy:
+            TableName: Menu
+        - DynamoDBCrudPolicy:
+            TableName: Roles
+        - DynamoDBCrudPolicy:
+            TableName: Menu_permissions
+        - DynamoDBCrudPolicy:
+            TableName: Brands
+        - SESEmailTemplateCrudPolicy: {}
+        - SESBulkTemplatedCrudPolicy:
+            IdentityName: parkstreet.com
+        - SSMParameterReadPolicy:
+            ParameterName: JWT_SECRET
+        - SSMParameterReadPolicy:
+            ParameterName: login_kms
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_centers
+        - KMSEncryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]
+        - KMSDecryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /brand/user-role
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: get-brand-users.js
+  GetBrandUsersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-brand-users.GetBrandUsersHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /brand/user-role
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: update-users-role.js
+  UpdateUsersRoleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/update-users-role.UpdateUsersRoleHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+        - DynamoDBCrudPolicy:
+            TableName: Roles
+        - DynamoDBCrudPolicy:
+            TableName: Menu
+        - DynamoDBCrudPolicy:
+            TableName: Menu_permissions
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /brand/user-role
+            Method: PUT
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: remove-brand-user.js
+  RemoveBrandUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/remove-brand-user.RemoveBrandUserHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Portal_users
+        - DynamoDBCrudPolicy:
+            TableName: Menu_permissions
+        - DynamoDBCrudPolicy:
+            TableName: Brands
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_centers
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /brand/user-role/{user_id}
+            Method: DELETE
+            Auth:
+              ApiKeyRequired: true
+            RequestParameters:
+              - method.request.path.user_id
+
+  # This is a Lambda function config associated with the source code: create-account.js
+  createAccountFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/create-account.CreateAccountHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Users
+        - SSMParameterReadPolicy:
+            ParameterName: JWT_SECRET
+        - SESEmailTemplateCrudPolicy: {}
+        - SSMParameterReadPolicy:
+            ParameterName: login_kms
+        - SESBulkTemplatedCrudPolicy:
+            IdentityName: parkstreet.com
+        - KMSEncryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]
+        - KMSDecryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          JWT_SECRET: parkstreet007dtc
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /account
+            Method: POST
+
+  # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
+
+Outputs:
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for stg stage"
+    Value: !Sub "https://77d880bvf0.execute-api.us-east-1.amazonaws.com/stg/"

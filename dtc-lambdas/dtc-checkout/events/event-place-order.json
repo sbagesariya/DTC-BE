@@ -1,0 +1,63 @@
+{
+    "httpMethod": "POST",
+    "body": {
+        "user_email": "user_email",
+        "user_detail": {
+            "phone": 4564564564,
+            "first_name": "first_name",
+            "last_name": "last_name"
+        },
+        "delivery_address": {
+            "address_line_1": "address_line_1",
+            "city": "city",
+            "state": "state",
+            "country": "country",
+            "zip_code": "zip_code"
+        },
+        "billing_address": {
+            "address_line_1": "address_line_1",
+            "city": "city",
+            "state": "state",
+            "country": "country",
+            "zip_code": "zip_code"
+        },
+        "payment_detail": {
+            "stripe_payment_method": "stripe_payment_method",
+            "stripe_payment_intent_id": "stripe_payment_intent_id",
+            "sub_total": "sub_total",
+            "discount": "discount",
+            "shipping_charge": "shipping_charge",
+            "tax": "tax",
+            "total": "total"
+        },
+        "product_detail": [
+            {
+                "brand_id": "product_detail",
+                "product_id": "product_id",
+                "name": "name",
+                "desc": "desc",
+                "price": 500,
+                "qty": 10
+            },
+            {
+                "brand_id": "product_detail",
+                "product_id": "product_id",
+                "name": "name",
+                "desc": "desc",
+                "price": 450,
+                "qty": 20
+            },
+            {
+                "brand_id": "product_detail",
+                "product_id": "product_id",
+                "name": "name",
+                "desc": "desc",
+                "price": 300,
+                "qty": 30
+            }
+        ],
+        "promocode": "promocode",
+        "instructions": "instructions",
+        "gift_note": "gift_note"
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "httpMethod": "POST",
+    "body": {
+        "email":"test@gmail.com",
+        "password": "test123",
+        "confirm_password": "test123",
+        "profilePicture":"",
+        "first_name":"Test name",
+        "last_name":"last name",
+        "phone":"123456789",
+        "date_of_birth":1610104240913,
+        "brand_name": "Brand name",
+        "brand_website": "brand_website"
+    }
+}

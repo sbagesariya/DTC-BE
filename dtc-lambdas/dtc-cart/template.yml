@@ -1,0 +1,253 @@
+# This is the SAM template that represents the architecture of your serverless application
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
+
+# The AWSTemplateFormatVersion identifies the capabilities of the template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  dtc-cart
+
+Globals:
+  Function:
+    Timeout: 3
+  Api:
+    Cors:
+      AllowMethods: "'GET,HEAD,OPTIONS,POST,PUT,DELETE'"
+      AllowHeaders: "'Authorization, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, X-api-key'"
+      AllowOrigin: "'*'"
+      AllowCredentials: "'*'"
+
+Parameters:
+  ApiStageName:
+    Type: String
+    Default: stg
+
+Conditions:
+  CreateProdResources: !Equals [!Ref ApiStageName, prod]
+  CreateDevResources: !Equals [!Ref ApiStageName, "stg"]
+
+# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
+Transform:
+- AWS::Serverless-2016-10-31
+
+# Resources declares the AWS resources that you want to include in the stack
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+Resources:
+  # Each Lambda function is defined by properties:
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  APIKeyAuth:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref ApiStageName
+      OpenApiVersion: 3.0.1
+   # This is to defined API-KEY for different stages
+  ApiKey:
+    Type: 'AWS::ApiGateway::ApiKey'
+    DependsOn:
+      - APIKeyAuthStage
+    Properties:
+      Description: DTC-cart API getway authentication api key
+      Enabled: 'true'
+      StageKeys:
+        - RestApiId: !Ref APIKeyAuth
+          StageName: !Ref ApiStageName
+  # This is to define usage plan for APIs
+  UsagePlan:
+    Type: 'AWS::ApiGateway::UsagePlan'
+    DependsOn:
+      - APIKeyAuth
+      - APIKeyAuthStage
+    Properties:
+      ApiStages:
+        - ApiId: !Ref APIKeyAuth
+          Stage: !Ref ApiStageName
+      Description: DTC-cart API getway authentication usage plan
+      # Quota:
+      #   Limit: 5000
+      #   Period: MONTH
+      # Throttle:
+      #   BurstLimit: 200
+      #   RateLimit: 100
+      UsagePlanName: dtc-cart-api-key
+  # This is to defined API-key with it's usage plan
+  UsagePlanKey:
+    Type: 'AWS::ApiGateway::UsagePlanKey'
+    DependsOn:
+      - ApiKey
+      - UsagePlan
+    Properties:
+      KeyId: !Ref ApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlan
+  # This is a Lambda function config associated with the source code: put-item.js
+  addToCartFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/add-to-cart.addToCartHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Cart
+        - DynamoDBCrudPolicy:
+            TableName: Cart
+        - DynamoDBCrudPolicy:
+            TableName: Products
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          CART_TABLE: Cart
+          PRODUCT_TABLE: Products
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /cart
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  clearCartFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/clear-cart-items.clearCartHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Cart
+        - DynamoDBCrudPolicy:
+            TableName: Cart
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          CART_TABLE: Cart
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /cart/clear/{userId}
+            Method: DELETE
+            Auth:
+              ApiKeyRequired: true
+            RequestParameters:
+              - method.request.path.userId
+
+  # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
+
+  # This is a Lambda function config associated with the source code: get-cart-items
+  getCartItemsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-cart-items.getCartItemsHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Cart
+        - DynamoDBCrudPolicy:
+            TableName: Cart
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_centers
+        - DynamoDBCrudPolicy:
+            TableName: Retailers
+        - DynamoDBCrudPolicy:
+            TableName: ship_compliant_order_log
+        - SSMParameterReadPolicy:
+            ParameterName: sovoscred
+        - DynamoDBCrudPolicy:
+            TableName: Inventory
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_inventory
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          CART_TABLE: Cart
+          SHIP_COMPLAINCE_API_URL: !If [CreateProdResources, https://restapi-staging.shipcompliant.com, !If [CreateDevResources, https://restapi-staging.shipcompliant.com, https://restapi-staging.shipcompliant.com]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /cart/get
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
+
+  # This is a Lambda function config associated with the source code: delete-cart-item
+  deleteCartItemFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/delete-cart-item.deleteCartItemHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Cart
+        - DynamoDBCrudPolicy:
+            TableName: Cart
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          CART_TABLE: Cart
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /cart/{userid}/{carttid}
+            Method: DELETE
+            Auth:
+              ApiKeyRequired: true
+            RequestParameters:
+              - method.request.path.userId
+              - method.request.path.carttid
+
+  # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
+
+  # This is a Lambda function config associated with the source code: update-cart-item
+  updateCartItemFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/update-cart-item.updateCartItemHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Cart
+        - DynamoDBCrudPolicy:
+            TableName: Cart
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          CART_TABLE: Cart
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /cart
+            Method: PUT
+            Auth:
+              ApiKeyRequired: true
+
+  # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
+  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
+
+Outputs:
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for stg stage"
+    Value: !Sub "https://77d880bvf0.execute-api.us-east-1.amazonaws.com/stg/"

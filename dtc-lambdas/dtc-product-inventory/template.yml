@@ -1,0 +1,406 @@
+# The AWSTemplateFormatVersion identifies the capabilities of the template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  dtc-product-inventory
+
+Globals:
+  Function:
+    Timeout: 3
+  Api:
+    Cors:
+      AllowMethods: "'GET,HEAD,OPTIONS,POST,PUT,DELETE'"
+      AllowHeaders: "'Authorization, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, X-Api-Key'"
+      AllowOrigin: "'*'"
+      AllowCredentials: "'*'"
+
+Parameters:
+  ApiStageName:
+    Type: String
+    Default: stg
+    AllowedValues: [prod, stg]
+
+Conditions:
+  CreateProdResources: !Equals [!Ref ApiStageName, prod]
+  CreateDevResources: !Equals [!Ref ApiStageName, "stg"]
+
+Transform:
+  - AWS::Serverless-2016-10-31
+
+# Resources declares the AWS resources that you want to include in the stack
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
+Resources:
+  PortalAuthAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref ApiStageName
+      GatewayResponses:
+        DEFAULT_4xx:
+          ResponseParameters:
+            Headers:
+              Access-Control-Expose-Headers: "'WWW-Authenticate'"
+              Access-Control-Allow-Origin: "'*'"
+      OpenApiVersion: 3.0.1
+      Auth:
+        AddDefaultAuthorizerToCorsPreflight: false
+        DefaultAuthorizer: MyLambdaTokenAuthorizer
+        Authorizers:
+          MyLambdaTokenAuthorizer:
+            FunctionArn: !GetAtt PortalAuthFunction.Arn
+  PortalAuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: authorizer/handler.AuthorizerHandler
+      Runtime: nodejs12.x
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - SSMParameterReadPolicy:
+            ParameterName: JWT_SECRET
+
+  # This is to defined API-KEY for different stages
+  ApiKey:
+    Type: 'AWS::ApiGateway::ApiKey'
+    DependsOn:
+      - PortalAuthAPIStage
+    Properties:
+      Description: DTC-product-inventory API getway authentication api key
+      Enabled: 'true'
+      StageKeys:
+        - RestApiId: !Ref PortalAuthAPI
+          StageName: !Ref ApiStageName
+  # This is to define usage plan for APIs
+  UsagePlan:
+    Type: 'AWS::ApiGateway::UsagePlan'
+    DependsOn:
+      - PortalAuthAPI
+      - PortalAuthAPIStage
+    Properties:
+      ApiStages:
+        - ApiId: !Ref PortalAuthAPI
+          Stage: !Ref ApiStageName
+      Description: DTC-product-inventory API getway authentication usage plan
+      # Quota:
+      #   Limit: 5000
+      #   Period: MONTH
+      # Throttle:
+      #   BurstLimit: 200
+      #   RateLimit: 100
+      UsagePlanName: dtc-product-inventory-api-key
+  # This is to defined API-key with it's usage plan
+  UsagePlanKey:
+    Type: 'AWS::ApiGateway::UsagePlanKey'
+    DependsOn:
+      - ApiKey
+      - UsagePlan
+    Properties:
+      KeyId: !Ref ApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlan
+
+  productInventoryListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/product-inventory-list.productInventoryListHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get product inventory summary API.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Inventory
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /product-inventory/list
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: get-all-brands.js
+  getAllBrandsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-all-brands.getAllBrandsHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Brands
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          BRANDS_TABLE: Brands
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /cms/brands
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: get-inventory-summary-card.js
+  getInventorySummaryCardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-inventory-summary-card.getInventorySummaryCardHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get Inventory Summary Cards
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: Inventory
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          INVENTORY_TABLE: Inventory
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /product-inventory/cards/{retailer_id}
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+            RequestParameters:
+              - method.request.path.retailer_id
+
+  # This is a Lambda function config associated with the source code: get-products-by-brand.js
+  getProductsByBrandFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-products-by-brand.getProductsByBrandHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: A simple example includes a HTTP post method to add one item to a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - DynamoDBCrudPolicy:
+            TableName: Size_variants
+        - DynamoDBCrudPolicy:
+            TableName: Inventory
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          SIZE_VARIANTS_TABLE: Size_variants
+          INVENTORY_TABLE: Inventory
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /product-inventory/products
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: add-product-inventory.js
+  addProductInventoryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/add-product-inventory.AddProductInventoryHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get Inventory Summary Cards
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: Inventory
+        - DynamoDBCrudPolicy:
+            TableName: Products
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          INVENTORY_TABLE: Inventory
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /product-inventory/add
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+  # This is a Lambda function config associated with the source code: product-inventory-detail.js
+  productInventoryDetailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/product-inventory-detail.ProductInventoryDetailHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Get product inventory detail
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: Inventory
+        - DynamoDBCrudPolicy:
+            TableName: Products
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          INVENTORY_TABLE: Inventory
+          BucketURL: !If [CreateProdResources, https://dtc-prod-public.s3.amazonaws.com, !If [CreateDevResources, https://dtc-stg-public.s3.amazonaws.com, https://dtc-stg-public.s3.amazonaws.com]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /product-inventory/detail
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: remove-inventory-product
+  removeInventoryProductFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/remove-inventory-product.removeInventoryProductHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Remove inventory product
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Cart
+        - DynamoDBCrudPolicy:
+            TableName: Inventory
+        - DynamoDBCrudPolicy:
+            TableName: Products
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          INVENTORY_TABLE: Inventory
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /product-inventory/{retailerId}/{createdAt}
+            Method: DELETE
+            Auth:
+              ApiKeyRequired: true
+            RequestParameters:
+              - method.request.path.retailerId
+              - method.request.path.createdAt
+
+  # This is a Lambda function config associated with the source code: product-inventory-update.js
+  productInventoryUpdateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/product-inventory-update.ProductInventoryUpdateHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Update product inventory stock, unit_price and retailer product Id
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: Inventory
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          INVENTORY_TABLE: Inventory
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /product-inventory/detail
+            Method: PUT
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: fulfillment-product-inventory.js
+  fulfillmentProductInventoryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/fulfillment-product-inventory.fulfillmentProductInventoryHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: get fulfillment product inventory based on fulfillment preference
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: Brands
+        - DynamoDBCrudPolicy:
+            TableName: Size_variants
+        - SSMParameterReadPolicy:
+            ParameterName: es_config
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          BRAND_TABLE: Brands
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /fulfillemnt/product-inventory
+            Method: POST
+            Auth:
+              ApiKeyRequired: true              
+
+  # This is a Lambda function config associated with the source code: fulfillment-product-inventory.js
+  GetfulfillmentInventoryDetailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/get-fulfillment-inventory-detail.GetfulfillmentInventoryDetailHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: get fulfillment inventory detail based on fulfillment preference
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the 
+        - DynamoDBCrudPolicy:
+            TableName: Brands
+        - SSMParameterReadPolicy:
+            ParameterName: es_config
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /fulfillemnt/inventory-detail
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+  
+  # This is a Lambda function config associated with the source code: save-fulfillment-inventory.js
+  savefulfillmentInventoryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/save-fulfillment-inventory.saveFulfillmentInventoryHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Save Fulfillment Product Inventory
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Table
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_inventory
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /fulfillment-inventory/save
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+Outputs:
+  WebEndpoint:
+    Description: 'API Gateway endpoint URL for staging stage'
+    Value: !Sub 'https://77d880bvf0.execute-api.us-east-1.amazonaws.com/stg/'

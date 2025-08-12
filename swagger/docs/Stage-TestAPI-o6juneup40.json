@@ -1,0 +1,66 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "version" : "2021-03-22T13:50:59Z",
+    "title" : "TestAPI"
+  },
+  "host" : "o6juneup40.execute-api.us-east-1.amazonaws.com",
+  "basePath" : "/Stage",
+  "schemes" : [ "https" ],
+  "paths" : {
+    "/persons" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "query",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : { }
+      },
+      "post" : {
+        "consumes" : [ "application/json" ],
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "MODEL8a94f4",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/definitions/MODEL8a94f4"
+          }
+        } ],
+        "responses" : { }
+      },
+      "put" : {
+        "responses" : { }
+      }
+    },
+    "/persons/{id}" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : { }
+      }
+    }
+  },
+  "definitions" : {
+    "MODEL8a94f4" : {
+      "type" : "object",
+      "required" : [ "userName" ],
+      "properties" : {
+        "lastName" : {
+          "type" : "string"
+        },
+        "firstName" : {
+          "type" : "string"
+        },
+        "userName" : {
+          "type" : "string"
+        }
+      }
+    }
+  }
+}

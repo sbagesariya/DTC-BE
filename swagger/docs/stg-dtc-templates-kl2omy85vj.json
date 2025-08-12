@@ -1,0 +1,413 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "version" : "1.0",
+    "title" : "dtc-templates"
+  },
+  "host" : "kl2omy85vj.execute-api.us-east-1.amazonaws.com",
+  "basePath" : "/stg",
+  "schemes" : [ "https" ],
+  "paths" : {
+    "/saved-template/{brand_id}/{template_id}" : {
+      "get" : {
+        "parameters" : [
+          {
+            "name" : "template_id",
+            "in" : "path",
+            "required" : false,
+            "type" : "string"
+          },
+          {
+            "name" : "brand_id",
+            "in" : "path",
+            "required" : false,
+            "type" : "string"
+          } 
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "summary" : "CORS support",
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "Default response for CORS method",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/template" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Add selected template to template library",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/addSelectedTemplate"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "summary" : "CORS support",
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "Default response for CORS method",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/template-library/{brand_id}" : {
+      "get" : {
+        "parameters" : [
+          {
+            "name" : "brand_id",
+            "in" : "path",
+            "required" : false,
+            "type" : "string"
+          } 
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "summary" : "CORS support",
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "Default response for CORS method",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/template/publish" : {
+      "put" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Add selected template to template library",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/addSelectedTemplate"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "summary" : "CORS support",
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "Default response for CORS method",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/template/remove" : {
+      "delete" : {
+        "parameters": [
+          {
+              "name": "brand_id",
+              "in": "query",
+              "description": "Brand Id ",
+              "required": true,
+              "type": "string"
+          },
+          {
+              "name": "template_id",
+              "in": "query",
+              "description": "Template Id",
+              "required": true,
+              "type": "string"
+          }
+      ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "summary" : "CORS support",
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "Default response for CORS method",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/template/save" : {
+      "put" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Add selected template to template library",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/saveTemplate"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "summary" : "CORS support",
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "Default response for CORS method",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions" : {
+    "api_key" : {
+      "type" : "apiKey",
+      "name" : "x-api-key",
+      "in" : "header"
+    },
+    "MyLambdaTokenAuthorizer" : {
+      "type" : "apiKey",
+      "name" : "Authorization",
+      "in" : "header",
+      "x-amazon-apigateway-authtype" : "custom"
+    }
+  },
+  "definitions": {
+    "addSelectedTemplate": {
+      "type": "object",
+      "required": [
+        "brand_id",
+        "template_id"
+      ],
+      "properties": {
+        "brand_id": {
+          "type": "string"
+        },
+        "template_id": {
+          "type": "string"
+        }
+      }
+    },
+    "saveTemplate": {
+      "type": "object",
+      "required": [
+      ],
+      "properties": {
+        "brand_id": {
+          "type": "string",
+          "example": "9b9af5d1-d518-4441-9c98-9a477241ab91"
+        },
+        "template_id": {
+          "type": "string",
+          "example": "c6c01980-9b9e-4325-95ad-3ee3193cebb5"
+        },
+        "color_annoucement_bar": {
+          "type": "obejct",
+          "example": {}
+        },
+        "color_background": {
+          "type": "obejct",
+          "example": {
+            "header_footer": "#FFFFFF",
+            "section": "#FFFFFF"
+          }
+        },
+        "color_button": {
+          "type": "obejct",
+          "example": {
+            "border": "#8B0E04",
+            "text": "#FFFFFF",
+            "hover_color": "rgb(95, 9, 2)",
+            "background": "#8B0E04"
+          }
+        },
+        "color_text": {
+          "type": "obejct",
+          "example": {
+            "heading_links": "#232323",
+            "subheading": "#232323",
+            "body_text": "#232323"
+          }
+        },
+        "favicon": {
+          "type": "string",
+          "example": ""
+        },
+        "favicon_alt_text": {
+          "type": "string",
+          "example": "favicon"
+        },
+        "logo": {
+          "type": "string",
+          "example": ""
+        },
+        "logo_alt_text": {
+          "type": "string",
+          "example": "logo"
+        },
+        "typography_body": {
+          "type": "obejct",
+          "example": {
+            "font_family": "HelveticaNeue",
+            "font_style": "Regular"
+          }
+        },
+        "typography_heading": {
+          "type": "obejct",
+          "example": {
+            "font_family": "HelveticaNeue",
+            "font_style": "Regular"
+          }
+        },
+        "typography_subheading": {
+          "type": "obejct",
+          "example": {
+            "font_family": "HelveticaNeue",
+            "font_style": "Regular"
+          }
+        },
+        "delete_content_images": {
+          "type": "string",
+          "example": ""
+        },
+        "header": {
+          "type": "obejct",
+          "example": {
+            "custom_logo": null,
+            "show_announcement": false,
+            "homepage_only": false,
+            "announcement_bar_text": "Brand Announcement like promotions, important notes, etc."
+          }
+        },
+        "featured_product_id": {
+          "type": "string",
+          "example": ""
+        },
+        "featured_products_description": {
+          "type": "string",
+          "example": ""
+        },
+        "product_section_header": {
+          "type": "string",
+          "example": "Products"
+        }
+      }
+    }
+  }
+}

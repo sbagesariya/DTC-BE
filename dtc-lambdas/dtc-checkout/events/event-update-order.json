@@ -1,0 +1,10 @@
+{
+    "httpMethod": "PUT",
+    "body": {
+        "order_id": "order_id",
+        "payment_detail": {
+            "stripe_payment_method": "stripe_payment_method",
+            "stripe_payment_intent_id": "stripe_payment_intent_id"
+        }
+    }
+}

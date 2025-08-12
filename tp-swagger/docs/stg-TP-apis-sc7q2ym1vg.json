@@ -1,0 +1,80 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "version" : "1.0",
+    "title" : "TP-apis"
+  },
+  "host" : "sc7q2ym1vg.execute-api.us-east-1.amazonaws.com",
+  "basePath" : "/stg",
+  "schemes" : [ "https" ],
+  "paths" : {
+    "/TP-api/login" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "TP user login API",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/TPUserLogin"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions" : {
+    "api_key" : {
+      "type" : "apiKey",
+      "name" : "x-api-key",
+      "in" : "header"
+    }
+  },
+  "definitions": {
+    "TPUserLogin": {
+      "type": "object",
+      "required": [
+        "brand_id",
+        "secret_token"
+      ],
+      "properties": {
+        "brand_id": {
+          "type": "string",
+          "example": "2dc8d9cc-6d6c-4103-bab8-f31e6f9eb57a"
+        },
+        "secret_token": {
+          "type": "string",
+          "example": "2b337579-f2df-4f6c-839b-018dae8bc9fe"
+        }
+      }
+    }
+  }
+}

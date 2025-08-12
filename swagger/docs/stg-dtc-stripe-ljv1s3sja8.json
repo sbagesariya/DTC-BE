@@ -1,0 +1,163 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "version" : "1.0",
+    "title" : "dtc-stripe"
+  },
+  "host" : "ljv1s3sja8.execute-api.us-east-1.amazonaws.com",
+  "basePath" : "/stg",
+  "schemes" : [ "https" ],
+  "paths" : {
+    "/stripe/create-payment-intent" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Brand User Update Profile",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/createPaymentIntent"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions" : {
+    "api_key" : {
+      "type" : "apiKey",
+      "name" : "x-api-key",
+      "in" : "header"
+    },
+    "MyLambdaTokenAuthorizer" : {
+      "type" : "apiKey",
+      "name" : "Authorization",
+      "in" : "header",
+      "x-amazon-apigateway-authtype" : "custom"
+    }
+  },
+  "definitions": {
+    "createPaymentIntent": {
+      "type": "object",
+      "required": [
+      ],
+      "properties": {
+        "brand_id": {
+          "type": "string"
+        },
+        "brand_name": {
+          "type": "string"
+        },
+        "retailer_id": {
+          "type": "string"
+        },
+        "user_email": {
+          "type": "string"
+        },
+        "instructions": {
+          "type": "string"
+        },
+        "gift_note": {
+          "type": "string"
+        },
+        "accept_terms": {
+          "type": "boolean"
+        },
+        "newsletter": {
+          "type": "boolean"
+        },
+        "cardType": {
+          "type": "string"
+        },
+        "delivery_address": {
+          "type": "object",
+          "example": {
+            "first_name": "Akash",
+            "last_name": "Rathod",
+            "address_line_1": "Beverly Boulevard",
+            "street": "8500",
+            "city": "Los Angeles",
+            "state": "CA",
+            "zip_code": "90048"
+          }
+        },
+        "user_detail": {
+          "type": "object",
+          "example": {
+            "first_name": "Akash",
+            "last_name": "Rathod",
+            "phone": "82008200",
+            "date_of_birth": "1991-8-31"
+          }
+        },
+        "billing_address": {
+          "type": "object",
+          "example": {
+            "same_as_delivery": true,
+            "first_name": "Akash",
+            "last_name": "Rathod",
+            "address_line_1": "Beverly Boulevard",
+            "city": "Los Angeles",
+            "state": "CA",
+            "zip_code": "90048"
+          }
+        },
+        "payment_detail": {
+          "type": "object",
+          "example": {
+            "sub_total": "60.00",
+            "shipping_charge": "15.00",
+            "tax": "12.00",
+            "discount": "0",
+            "promo_code": "",
+            "total": "33.00"
+          }
+        },
+        "stripe_order_amount": {
+          "type": "string"
+        },
+        "product_detail": {
+          "type": "object",
+          "example": [
+            {
+              "product_id": "89dd7e7a-383e-4978-a416-b35325f0fcb4",
+              "price": 60,
+              "qty": 1,
+              "size": "12 mL",
+              "name": "Product-145",
+              "createdAt": 1625065788536
+            }
+          ]
+        }
+      }
+    }
+  }
+}

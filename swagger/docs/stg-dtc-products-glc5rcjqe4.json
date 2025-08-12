@@ -1,0 +1,401 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "version" : "1.0",
+    "title" : "dtc-products"
+  },
+  "host" : "glc5rcjqe4.execute-api.us-east-1.amazonaws.com",
+  "basePath" : "/stg",
+  "schemes" : [ "https" ],
+  "paths" : {
+    "/cms/product/create" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Create brand Product",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CreateProduct"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cms/product/types/{brand_id}" : {
+      "get" : {
+        "parameters" : [
+          {
+            "name" : "brand_id",
+            "in" : "path",
+            "required" : false,
+            "type" : "string"
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cms/variant/add" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Add Product size variant",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ProductVariant"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cms/variants" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Get Product size variant",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/GetProductVariant"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions" : {
+    "api_key" : {
+      "type" : "apiKey",
+      "name" : "x-api-key",
+      "in" : "header"
+    },
+    "MyLambdaTokenAuthorizer" : {
+      "type" : "apiKey",
+      "name" : "Authorization",
+      "in" : "header",
+      "x-amazon-apigateway-authtype" : "custom"
+    }
+  },
+  "definitions": {
+    "ProductVariant": {
+      "type": "object",
+      "required": [
+        "brand_id",
+        "product_id",
+        "variant_size",
+        "variant_type",
+        "upc_code",
+        "sku_code"
+      ],
+      "properties": {
+        "brand_id": {
+          "type": "string",
+          "example": "9b9af5d1-d518-4441-9c98-9a477241ab91"
+        },
+        "product_id": {
+          "type": "string",
+          "example": "c7d4fbd0-8d7b-11eb-8204-413141717af6"
+        },
+        "variant_size": {
+          "type": "integer",
+          "example": 12
+        },
+        "variant_type": {
+          "type": "string",
+          "example": "ml"
+        },
+        "upc_code": {
+          "type": "integer",
+          "example": 11
+        },
+        "sku_code": {
+          "type": "integer",
+          "example": 115
+        }
+      }
+    },
+    "GetProductVariant": {
+      "type": "object",
+      "required": [
+        "product_id"
+      ],
+      "properties": {
+        "product_id": {
+          "type": "string",
+          "example": "c7d4fbd0-8d7b-11eb-8204-413141717af6"
+        },
+        "limit": {
+          "type": "integer",
+          "example": 10
+        },
+        "order": {
+          "type": "string",
+          "example": "desc"
+        },
+        "sort": {
+          "type": "string",
+          "example": "sku_code"
+        },
+        "lastKey": {
+          "type": "string",
+          "example": ""
+        }
+      }
+    },
+    "CreateProduct": {
+      "type": "object",
+      "required": [
+      ],
+      "properties": {
+        "product_id": {
+          "type": "string",
+          "example": "c7d4fbd0-8d7b-11eb-8204-413141717af6",
+          "note": "Only pass when updating product"
+        },
+        "brand_id": {
+          "type": "string",
+          "example": "97a29bf7-f6a3-434d-86eb-3c01b0c6a818"
+        },
+        "ABV": {
+          "type": "string",
+          "example": "17"
+        },
+        "alcohol_type": {
+          "type": "string",
+          "example": "Whisky"
+        },
+        "availability_count": {
+          "type": "integer",
+          "example": 1
+        },
+        "variants_count": {
+          "type": "integer",
+          "example": 1
+        },
+        "createdAt": {
+          "type": "integer",
+          "example": 1607352352957
+        },
+        "updatedAt": {
+          "type": "integer",
+          "example": 1607352352957
+        },
+        "available_address": {
+          "type": "obejct",
+          "example": {
+            "address_line_1": "first",
+            "address_line_2": "second",
+            "city": "city-1",
+            "country": "US",
+            "state": "Florida",
+            "zip_code": "456456"
+          }
+        },
+        "description": {
+          "type": "string",
+          "example": "Dummy Product"
+        },
+        "featured": {
+          "type": "string",
+          "example": "false"
+        },
+        "large_image": {
+          "type": "string",
+          "example": "text.png"
+        },
+        "small_image": {
+          "type": "string",
+          "example": "text.png"
+        },
+        "tasting_notes": {
+          "type": "array",
+          "example": ["Good!"]
+        },
+        "price": {
+          "type": "string",
+          "example": 45
+        },
+        "origin": {
+          "type": "string",
+          "example": "New york"
+        },
+        "product_name": {
+          "type": "string",
+          "example": "Product-55"
+        },
+        "product_type": {
+          "type": "string",
+          "example": "Spirit"
+        },
+        "price_matrix": {
+          "type": "object",
+          "example": [{
+            "ground_shipping": {
+              "1.75L": "45",
+              "375_mL": "46",
+              "750_mL": "47"
+            },
+            "scheduled_delivery": {
+              "1.75L": "48",
+              "375_mL": "49",
+              "750_mL": "50"
+            }
+          }]
+        },
+        "search_product_name": {
+          "type": "string",
+          "example": "product-55"
+        },
+        "product_images": {
+          "type": "object",
+          "example": {
+            "img_1": "product-1619705602826.jpg"
+          }
+        },
+        "shipping": {
+          "type": "array",
+          "example": ["Ground shipping", "Scheduled delivery"]
+        },
+        "size": {
+          "type": "array",
+          "example": ["750 mL", "375 mL"]
+        },
+        "product_size_variants": {
+          "type": "object",
+          "example": [
+            {
+              "variant_type":"ml",
+              "variant_size":125,
+              "upc_code":1234567800,
+              "variant":"125 ml",
+              "sku_code": 111
+           },
+           {
+              "variant_type":"ml",
+              "variant_size":275,
+              "upc_code":1234567800,
+              "variant":"275 ml",
+              "sku_code": 121
+           }
+          ]
+        }
+      }
+    }
+  }
+}

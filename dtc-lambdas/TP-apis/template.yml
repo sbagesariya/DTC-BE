@@ -1,0 +1,325 @@
+# The AWSTemplateFormatVersion identifies the capabilities of the template
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  TP-apis
+
+Globals:
+  Function:
+    Timeout: 3
+  Api:
+    Cors:
+      AllowMethods: "'GET,HEAD,OPTIONS,POST,PUT,DELETE'"
+      AllowHeaders: "'Authorization, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, X-Api-Key, brand_id'"
+      AllowOrigin: "'*'"
+      AllowCredentials: "'*'"
+
+Parameters:
+  ApiStageName:
+    Type: String
+    Default: stg
+    AllowedValues: [prod, stg]
+
+Conditions:
+  CreateProdResources: !Equals [!Ref ApiStageName, prod]
+  CreateDevResources: !Equals [!Ref ApiStageName, "stg"]
+
+Transform:
+- AWS::Serverless-2016-10-31
+
+Resources:
+  PortalAuthAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref ApiStageName
+      GatewayResponses:
+        DEFAULT_4xx:
+          ResponseParameters:
+            Headers:
+              Access-Control-Expose-Headers: "'WWW-Authenticate'"
+              Access-Control-Allow-Origin: "'*'"
+      OpenApiVersion: 3.0.1
+      Auth:
+        AddDefaultAuthorizerToCorsPreflight: false
+        DefaultAuthorizer: MyLambdaTokenAuthorizer
+        Authorizers:
+          MyLambdaTokenAuthorizer:
+            FunctionPayloadType: REQUEST
+            FunctionArn: !GetAtt PortalAuthFunction.Arn
+            Identity:
+                Headers:
+                  - Authorization
+                  - brand_id
+  PortalAuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: authorizer/handler.AuthorizerHandler
+      Runtime: nodejs12.x
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the SampleTable
+        - SSMParameterReadPolicy:
+            ParameterName: JWT_SECRET
+  APIKeyAuth:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref ApiStageName
+      OpenApiVersion: 3.0.1      
+      
+   # This is to defined API-KEY for different stages
+  ApiKey:
+    Type: 'AWS::ApiGateway::ApiKey'
+    DependsOn:
+      - APIKeyAuthStage
+      - PortalAuthAPIStage
+    Properties:
+      Description: TP-apis API getway authentication api key
+      Enabled: true
+      StageKeys:
+        - RestApiId: !Ref APIKeyAuth
+          StageName: !Ref ApiStageName
+        - RestApiId: !Ref PortalAuthAPI
+          StageName: !Ref ApiStageName
+  # This is to define usage plan for APIs
+  UsagePlan:
+    Type: 'AWS::ApiGateway::UsagePlan'
+    DependsOn:
+      - APIKeyAuth
+      - APIKeyAuthStage
+      - PortalAuthAPI
+      - PortalAuthAPIStage
+    Properties:
+      ApiStages:
+        - ApiId: !Ref APIKeyAuth
+          Stage: !Ref ApiStageName
+        - ApiId: !Ref PortalAuthAPI
+          Stage: !Ref ApiStageName
+      Description: TP-apis API getway authentication usage plan
+      # Quota:
+      #   Limit: 5000
+      #   Period: MONTH
+      # Throttle:
+      #   BurstLimit: 200
+      #   RateLimit: 100
+      UsagePlanName: TP-apis-api-key
+  # This is to defined API-key with it's usage plan
+  UsagePlanKey:
+    Type: 'AWS::ApiGateway::UsagePlanKey'
+    DependsOn:
+      - ApiKey
+      - UsagePlan
+    Properties:
+      KeyId: !Ref ApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlan
+
+  # This is a Lambda function config associated with the source code: tp-user-login.js
+  thirdPartyUserLoginFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/tp-user-login.ThirdPartyUserLoginHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Third party user login API
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Tables
+        - DynamoDBCrudPolicy:
+            TableName: Public_api_tokens
+        - SSMParameterReadPolicy:
+            ParameterName: JWT_SECRET
+        - KMSEncryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]
+        - KMSDecryptPolicy:
+            KeyId: !If [CreateProdResources, 3987584b-44ff-4727-9535-358077eb1c4b, !If [CreateDevResources, 54344cf8-dc2f-4caa-85b8-d6a30e677f35, 54344cf8-dc2f-4caa-85b8-d6a30e677f35]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref APIKeyAuth
+            Path: /TP-api/login
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: tp-get-customer.js
+  thirdPartyGetCustomerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/tp-get-customer.ThirdPartyGetCustomerHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Third party user get customer API
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Tables
+        - DynamoDBCrudPolicy:
+            TableName: Users
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /TP-api/getcustomer/{customer_id}
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+  # This is a Lambda function config associated with the source code: tp-get-customer.js
+  thirdPartyCreateCustomerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/tp-create-customer.ThirdPartyCreateCustomerHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Third party user get customer API
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Tables
+        - DynamoDBCrudPolicy:
+            TableName: Users
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /TP-api/create-customer
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+ 
+  # This is a Lambda function config associated with the source code: tp-create-sales-order.js
+  thirdPartyCreateSalesOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/tp-create-sales-order.ThirdPartyCreateSalesOrderHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Third party create sales order API
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Tables
+        - DynamoDBCrudPolicy:
+            TableName: Order
+        - DynamoDBCrudPolicy:
+            TableName: Brands
+        - DynamoDBCrudPolicy:
+            TableName: Size_variants
+        - DynamoDBCrudPolicy:
+            TableName: Users
+        - SESEmailTemplateCrudPolicy: {}
+        - SESBulkTemplatedCrudPolicy:
+            IdentityName: OrderMailTemplate
+            IdentityName: parkstreet.com
+        - SSMParameterReadPolicy:
+            ParameterName: sovoscred
+        - DynamoDBCrudPolicy:
+            TableName: ship_compliant_order_log
+        - SSMParameterReadPolicy:
+            ParameterName: lnj_group_token
+        - DynamoDBCrudPolicy:
+            TableName: Auto_increment
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_centers
+        - DynamoDBCrudPolicy:
+            TableName: Templates
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution          
+          SHIP_COMPLAINCE_API_URL: !If [CreateProdResources, https://restapi-staging.shipcompliant.com, !If [CreateDevResources, https://restapi-staging.shipcompliant.com, https://restapi-staging.shipcompliant.com]]
+          NAV_PUBLIC_API_URL: !If [CreateProdResources, https://api.parkstreet.com, !If [CreateDevResources, https://stgapi.parkstreet.com, https://stgapi.parkstreet.com]]
+          WAREHOUSE: !If [CreateProdResources, 9, !If [CreateDevResources, 9, 9]]
+          LOCATION_GROUP: !If [CreateProdResources, 69, !If [CreateDevResources, 69, 69]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /TP-api/create-sales-order
+            Method: POST
+            Auth:
+              ApiKeyRequired: true
+                        
+  # This is a Lambda function config associated with the source code: tp-get-sales-order.js
+  thirdPartyGetSalesOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/tp-get-sales-order.ThirdPartyGetSalesOrderHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Third party get sales order
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Tables
+        - DynamoDBCrudPolicy:
+            TableName: Order
+        - DynamoDBCrudPolicy:
+            TableName: Users
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /TP-api/sales-order/{order_id}
+            Method: GET
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: tp-update-sales-order.js
+  thirdPartyUpdateSalesOrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/tp-update-sales-order.ThirdPartyUpdateSalesOrderHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 900
+      Description: Third party update sales order
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Tables
+        - DynamoDBCrudPolicy:
+            TableName: Order
+        - SESEmailTemplateCrudPolicy: {}
+        - SESBulkTemplatedCrudPolicy:
+            IdentityName: OrderMailTemplate
+            IdentityName: parkstreet.com
+        - SSMParameterReadPolicy:
+            ParameterName: lnj_group_token
+      Environment:
+        Variables:
+          # Make table name accessible as environment variable from function code during execution
+          FE_DOMAIN_URL: !If [CreateProdResources, https://dtc.parkstreet.com, !If [CreateDevResources, https://stgdtc.parkstreet.com, https://stgdtc.parkstreet.com]]
+          NAV_PUBLIC_API_URL: !If [CreateProdResources, https://api.parkstreet.com, !If [CreateDevResources, https://stgapi.parkstreet.com, https://stgapi.parkstreet.com]]
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /TP-api/update-sales-order
+            Method: PUT
+            Auth:
+              ApiKeyRequired: true
+
+  # This is a Lambda function config associated with the source code: tp-update-product-inventory.js
+  thirdPartyUpdateProductInventoryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/tp-update-product-inventory.ThirdPartyUpdateInventoryHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 100
+      Description: Third party user get customer API
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the Tables
+        - DynamoDBCrudPolicy:
+            TableName: Fulfillment_inventory
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PortalAuthAPI
+            Path: /TP-api/inventory-update
+            Method: PUT
+            Auth:
+              ApiKeyRequired: true
+Outputs:
+  WebEndpoint:
+    Description: "API Gateway endpoint URL for stg stage"
+    Value: !Sub "https://i2yb88b2p0.execute-api.us-east-1.amazonaws.com/stg/"

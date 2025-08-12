@@ -1,0 +1,23 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "development environment hostname :",
+    "version": "1.0.0",
+    "title": "Parkstreet-DTC"
+  },
+  "basePath": "",
+  "securityDefinitions": {
+    "bearerAuth": {
+      "name": "Authorization",
+      "type": "apiKey",
+      "in": "header",
+      "bearerFormat": "JWT"
+    }
+  },
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "paths": {},
+  "definitions": {}
+}

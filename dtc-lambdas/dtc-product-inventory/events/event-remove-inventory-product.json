@@ -1,0 +1,7 @@
+{
+    "httpMethod": "GET",
+    "pathParameters": {
+        "retailerId": "retailerId",
+        "createdAt": "createdAt"
+    }
+}

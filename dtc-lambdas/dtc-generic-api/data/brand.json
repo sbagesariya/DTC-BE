@@ -1,0 +1,19 @@
+{
+    "email": "mdelatorre@parkstreet.com",
+    "is_temporary_password": false,
+    "status": "pending",
+    "max_product_count": 20,
+    "user_type": "brand",
+    "max_market_count": 5,
+    "user_roles": {
+        "administrator": true,
+        "information": true,
+        "developer": true,
+        "manager": true
+    },   
+    "password": "test@1234",
+    "brand_website": "http://exnovo.parkstreet.com",
+    "user_id":  "6d34871a-69e7-4600-96d0-64f512a9bd9f",
+    "last_name": "",
+    "first_name": "Exnovo"   
+}

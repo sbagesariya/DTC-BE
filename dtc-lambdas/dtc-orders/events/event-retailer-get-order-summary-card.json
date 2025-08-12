@@ -1,0 +1,6 @@
+{
+    "httpMethod": "GET",
+    "pathParameters": {
+        "retailer_id": "retailer_id"
+    }
+}

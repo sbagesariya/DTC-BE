@@ -1,0 +1,252 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "version" : "1.0",
+    "title" : "dtc-cart"
+  },
+  "host" : "vzt1vo4jq5.execute-api.us-east-1.amazonaws.com",
+  "basePath" : "/stg",
+  "schemes" : [ "https" ],
+  "paths" : {
+    "/cart" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Add to cart",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/AddToCart"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "api_key" : [ ]
+        } ]
+      },
+      "put" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "Update cart",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UpdateCart"
+            }
+          }
+        ],
+        "responses" : { },
+        "security" : [ {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cart/clear/{userId}" : {
+      "delete" : {
+        "parameters" : [
+          {
+          "name" : "userId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : { },
+        "security" : [ {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cart/{userid}" : {
+      "get" : {
+        "parameters" : [
+          {
+          "name" : "userId",
+          "in" : "path",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : { },
+        "security" : [ {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cart/{userid}/{carttid}" : {
+      "delete" : {
+        "parameters" : [
+          {
+          "name" : "userId",
+          "in" : "path",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "carttid",
+          "in" : "path",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : { },
+        "security" : [ {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions" : {
+    "api_key" : {
+      "type" : "apiKey",
+      "name" : "x-api-key",
+      "in" : "header"
+    }
+  },
+  "definitions": {
+    "AddToCart": {
+      "type": "object",
+      "required": [
+        "brandId",
+        "productId",
+        "userId",
+        "size",
+        "price",
+        "qty"
+      ],
+      "properties": {
+        "brandId": {
+          "type": "string",
+          "example": "8fe49d41-c91d-46c3-a4f8-86be6483c186"
+        },
+        "productId": {
+          "type": "string",
+          "example": "3c52c188-8f75-4b15-9717-d947d0d673c6"
+        },
+        "userId": {
+          "type": "string",
+          "example": "08e4f5b5-47f6-4a74-b3a0-b90886813c2d"
+        },
+        "size": {
+          "type": "string",
+          "example": "750 ml"
+        },
+        "price": {
+          "type": "string",
+          "example": "25"
+        },
+        "qty": {
+          "type": "string",
+          "example": "2"
+        }
+      }
+    },
+    "UpdateCart": {
+      "type": "object",
+      "required": [
+        "userid",
+        "cartid",
+        "qty"
+      ],
+      "properties": {
+        "userid": {
+          "type": "string",
+          "example": "8fe49d41-c91d-46c3-a4f8-86be6483c186"
+        },
+        "cartid": {
+          "type": "string",
+          "example": "3c52c188-8f75-4b15-9717-d947d0d673c6"
+        },
+        "qty": {
+          "type": "string",
+          "example": "2"
+        }
+      }
+    }
+  }
+}

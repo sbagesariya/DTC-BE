@@ -1,0 +1,43 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "version" : "2021-03-24T11:38:46Z",
+    "title" : "swagger"
+  },
+  "host" : "r9jjlxbimg.execute-api.us-east-1.amazonaws.com",
+  "basePath" : "/stg",
+  "schemes" : [ "https" ],
+  "paths" : {
+    "/" : {
+      "post" : {
+        "consumes" : [ "application/json" ],
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "MODELeb778a",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/definitions/MODELeb778a"
+          }
+        } ],
+        "responses" : { }
+      }
+    }
+  },
+  "definitions" : {
+    "MODELeb778a" : {
+      "type" : "object",
+      "required" : [ "userName" ],
+      "properties" : {
+        "lastName" : {
+          "type" : "string"
+        },
+        "firstName" : {
+          "type" : "string"
+        },
+        "userName" : {
+          "type" : "string"
+        }
+      }
+    }
+  }
+}

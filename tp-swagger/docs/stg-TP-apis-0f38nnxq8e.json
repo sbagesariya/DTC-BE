@@ -1,0 +1,463 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "version" : "1.0",
+    "title" : "TP-apis"
+  },
+  "host" : "0f38nnxq8e.execute-api.us-east-1.amazonaws.com",
+  "basePath" : "/stg",
+  "schemes" : [ "https" ],
+  "paths" : {
+    "/TP-api/create-customer" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "TP user create customer API",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/TPCreateCustomer"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "brand_id" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/TP-api/create-sales-order" : {
+      "post" : {
+        "consumes": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "Body",
+            "description": "TP create sales order API",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/TPCreateSalesOrder"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "brand_id" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/TP-api/getcustomer/{customer_id}" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "customer_id",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        }, {
+          "brand_id" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "customer_id",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/TP-api/sales-order/{order_id}" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "order_id",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "brand_id" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions" : {
+    "api_key" : {
+      "type" : "apiKey",
+      "name" : "x-api-key",
+      "in" : "header"
+    },
+    "brand_id" : {
+      "type" : "apiKey",
+      "name" : "brand_id",
+      "in" : "header"
+    },
+    "MyLambdaTokenAuthorizer" : {
+      "type" : "apiKey",
+      "name" : "Authorization",
+      "in" : "header",
+      "x-amazon-apigateway-authtype" : "custom"
+    }
+  },
+  "definitions": {
+    "TPCreateCustomer": {
+      "type": "object",
+      "required": [
+        "email",
+        "first_name",
+        "last_name",
+        "phone",
+        "date_of_birth"
+      ],
+      "properties": {
+        "email": {
+          "type": "string",
+          "example": "test@gmail.com"
+        },
+        "first_name": {
+          "type": "string",
+          "example": "Test"
+        },
+        "last_name": {
+          "type": "string",
+          "example": "Test"
+        },
+        "phone": {
+          "type": "string",
+          "example": "9898989898"
+        },
+        "date_of_birth": {
+          "type": "string",
+          "example": "YYYY/MM/DD"
+        }
+      }
+    },
+    "TPCreateSalesOrder": {
+      "type": "object",
+      "required": [
+        "confirmation_order_number",
+        "brand_id",
+        "customer_id",
+        "order_date",
+        "transaction_type",
+        "payment_status",
+        "fulfillment_types",
+        "estimated_delivery_date",
+        "delivery_add_1",
+        "delivery_add_2",
+        "delivery_zip",
+        "delivery_city",
+        "delivery_state",
+        "total_shipping_cost",
+        "total_taxes",
+        "total_promotion",
+        "product_detail"
+      ],
+      "properties": {
+        "confirmation_order_number": {
+          "type": "string",
+          "example": "AQZAR"
+        },
+        "brand_id": {
+          "type": "string",
+          "example": "9b9af5d1-d518-4441-9c98-9a477241ab91"
+        },
+        "customer_id": {
+          "type": "string",
+          "example": "DTC-AKA-0708DA"
+        },
+        "order_date": {
+          "type": "string",
+          "example": "09/21/2021"
+        },
+        "payment_status": {
+          "type": "string",
+          "example": "Paid"
+        },
+        "fulfillment_types": {
+          "type": "string",
+          "example": "Fulfillment Center"
+        },
+        "estimated_delivery_date": {
+          "type": "string",
+          "example": "09/30/2021"
+        },
+        "delivery_add_1": {
+          "type": "string",
+          "example": "Beverly Boulevard"
+        },
+        "delivery_add_2": {
+          "type": "string",
+          "example": "address 2"
+        },
+        "delivery_zip": {
+          "type": "string",
+          "example": "90048"
+        },
+        "delivery_city": {
+          "type": "string",
+          "example": "Los Angeles"
+        },
+        "delivery_state": {
+          "type": "string",
+          "example": "CA"
+        },
+        "delivery_country": {
+          "type": "string",
+          "example": "US"
+        },
+        "total_shipping_cost": {
+          "type": "number",
+          "example": 15.00
+        },
+        "total_taxes": {
+          "type": "number",
+          "example": 2.00
+        },
+        "total_promotion": {
+          "type": "string",
+          "example": 3.00
+        },
+        "payment_date": {
+          "type": "string",
+          "example": "09/21/2021"
+        },
+        "payment_confirmation_id": {
+          "type": "string",
+          "example": "1234567"
+        },
+        "delivery_instructions": {
+          "type": "string",
+          "example": "Do good packaginDo good packaginDo good"
+        },
+        "billing_first_name": {
+          "type": "string",
+          "example": "Exnovo"
+        },
+        "billing_last_name": {
+          "type": "string",
+          "example": "Jessamyn"
+        },
+        "billing_add_1": {
+          "type": "string",
+          "example": "Beverly Boulevard"
+        },
+        "billing_add_2": {
+          "type": "string",
+          "example": "address 2"
+        },
+        "billing_zip": {
+          "type": "string",
+          "example": "90048"
+        },
+        "billing_city": {
+          "type": "string",
+          "example": "Los Angeles"
+        },
+        "billing_state": {
+          "type": "string",
+          "example": "CA"
+        },
+        "billing_country": {
+          "type": "string",
+          "example": "US"
+        },
+        "order_notes": {
+          "type": "string",
+          "example": "Test notes"
+        },
+        "tracking_id": {
+          "type": "string",
+          "example": "1234567890"
+        },
+        "tracking_company": {
+          "type": "string",
+          "example": "Fedex"
+        },
+        "transaction_type": {
+          "type": "string",
+          "example": "Sales Order"
+        },
+        "product_detail": {
+          "type": "object",
+          "example": [
+            {
+              "product_id": "89dd7e7a-383e-4978-a416-b35325f0fcb4",
+              "quantity": 5,
+              "unit_price": 10,
+              "variant_id": "6805f064-ce85-49aa-ab3a-51eb6a22dca4"
+            },
+            {
+                "product_id": "89dd7e7a-383e-4978-a416-b35325f0fcb4",
+                "quantity": 4,
+                "unit_price": 12,
+                "variant_id": "860d5b27-4fdb-4b04-886c-18a698c33e53"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,4 @@
+{
+    "httpMethod": "POST",
+    "body": "{\"promo_code\": \"promo_code1\",\"sub_total\": \"sub_total1\"}"
+}

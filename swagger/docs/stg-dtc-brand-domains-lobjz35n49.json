@@ -1,0 +1,251 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "version" : "1.0",
+    "title" : "dtc-brand-domains"
+  },
+  "host" : "lobjz35n49.execute-api.us-east-1.amazonaws.com",
+  "basePath" : "/stg",
+  "schemes" : [ "https" ],
+  "paths" : {
+    "/brand/domains/{brand_id}" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "brand_id",
+          "in" : "path",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ps/domain" : {
+      "post" : {
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "PSDOMAIN",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/definitions/PSDOMAIN"
+          }
+        } ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ps/domain/availibility" : {
+      "post" : {
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "DOMAINCHECK",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/definitions/DOMAINCHECK"
+          }
+        } ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ps/domain/get-association" : {
+      "post" : {
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "DOMAINASSOCIATION",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/definitions/DOMAINASSOCIATION"
+          }
+        } ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ps/extdomain" : {
+      "post" : {
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "PSDOMAIN",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/definitions/PSDOMAIN"
+          }
+        } ],
+        "responses" : { },
+        "security" : [ {
+          "MyLambdaTokenAuthorizer" : [ ]
+        }, {
+          "api_key" : [ ]
+        } ]
+      },
+      "options" : {
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "200 response",
+            "headers" : {
+              "Access-Control-Allow-Origin" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Methods" : {
+                "type" : "string"
+              },
+              "Access-Control-Allow-Headers" : {
+                "type" : "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions" : {
+    "api_key" : {
+      "type" : "apiKey",
+      "name" : "x-api-key",
+      "in" : "header"
+    },
+    "MyLambdaTokenAuthorizer" : {
+      "type" : "apiKey",
+      "name" : "Authorization",
+      "in" : "header",
+      "x-amazon-apigateway-authtype" : "custom"
+    }
+  },
+  "definitions" : {
+    "PSDOMAIN" : {
+      "type" : "object",
+      "required" : [ "brand_id", "domain_name", "brand_name" ],
+      "properties" : {
+        "brand_id" : {
+          "type" : "string"
+        },
+        "domain_name" : {
+          "type" : "string"
+        },
+        "brand_name" : {
+          "type" : "string"
+        }        
+      }
+    },
+    "DOMAINASSOCIATION" : {
+      "type" : "object",
+      "required" : [ "brand_id", "domain_name" ],
+      "properties" : {
+        "brand_id" : {
+          "type" : "string"
+        },
+        "domain_name" : {
+          "type" : "string"
+        }        
+      }
+    },
+    "DOMAINCHECK" : {
+      "type" : "object",
+      "required" : [ "domain_name" ],
+      "properties" : {
+        "domain_name" : {
+          "type" : "string"
+        }        
+      }
+    }
+  }
+}
